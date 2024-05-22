@@ -32,19 +32,28 @@ def get_mpd_status(serverName:str):
         print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] result_server:', result_server)
 
     status_connect, client_connect = mpdUtils.mpd_connect_by_server(result_server)
-    if not status_connect:
+    if status_connect:
         return status_connect
     
     if config.IS_DEBUG:
         print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] client_connect:', client_connect)
 
+    
+
     mpd_status = client_connect.status()
     if config.IS_DEBUG:
         print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] mpd_status:', mpd_status)
 
+    mpd_stats = client_connect.stats()
+    if config.IS_DEBUG:
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] mpd_stats:', mpd_stats)
+
+
     client_connect.disconnect()
 
-    return mpd_status
+    result = {**mpd_status, **mpd_stats}
+
+    return result
 
 
 

@@ -61,6 +61,8 @@ def get_mpd_server_by_name(serverName:str):
         
 
         if server.name == serverName:
+            if config.IS_DEBUG:
+                print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] Find Server:', server)
             return None, server
         
     # 여기까지 오면 없는 것임
@@ -77,16 +79,19 @@ def get_mpd_server_by_name(serverName:str):
 
 
 def mpd_connect_by_server(server:MpdServer):
+    if config.IS_DEBUG:
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] server:', server)
+
     client = MPDClient()
 
     try:
-        client.connect(server["ip"], server["port"])
+        client.connect(server.ip, server.port)
         if config.IS_DEBUG:
             print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] mpd_version:', client.mpd_version)        
         if not client.mpd_version:
             requestResult = RequestResult()
             requestResult.result = RESULT_FAIL
-            requestResult.msg = f'MPD에 연결 할 수 없습니다.[{server["displayName"]}]'
+            requestResult.msg = f'MPD에 연결 할 수 없습니다.[{server.displayName}]'
             requestResult.method = f'{inspect.stack()[0][3]}'
             return requestResult, None
         
@@ -96,7 +101,7 @@ def mpd_connect_by_server(server:MpdServer):
         print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] Exception:', str(e))
         requestResult = RequestResult()
         requestResult.result = RESULT_FAIL
-        requestResult.msg = f'{str(e)}, {server["displayName"]}'
+        requestResult.msg = f'{str(e)}, {server.displayName}'
         requestResult.method = f'{inspect.stack()[0][3]}'
         return requestResult, None
 
