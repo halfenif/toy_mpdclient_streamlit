@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+  mpdclient_fastapi:
+    build: fastapi/
+    ports: 
+      - 9011:9011
+    networks:
+      - deploy_network
+    volumes:
+      - /mnt/folder_source:/app/source:Z # :Z flag for RedHat volume mount permission
+      - /mnt/folder_target:/app/target:Z
+    container_name: mpdclient_fastapi
+    restart: always
+
+  mpdclient_streamlit:
+    build: streamlit/
+    depends_on:
+      - mpdclient_fastapi
+    ports: 
+        - 9010:9010
+    networks:
+      - deploy_network
+    container_name: mpdclient_streamlit
+    restart: always
+
+networks:
+  deploy_network:
+    driver: bridge
