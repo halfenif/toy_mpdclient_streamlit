@@ -44,8 +44,8 @@ def get_mpd_server_list():
 
 # MPD Status
 @app.get("/get_mpd_status")
-def get_mpd_status():
-    return mpdApp.get_mpd_status()
+def get_mpd_status(serverName:str):
+    return mpdApp.get_mpd_status(serverName)
 
 # Folder And File List
 @app.get("/list_folder_and_file_by_path")

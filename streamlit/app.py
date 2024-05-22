@@ -392,6 +392,9 @@ if st.session_state[S_SB_FOLDER_SELECT]:
 
 #---------------------------------------------------------------------
 
+
+
+
 # Page Header
 fn_display_page_header(False)
 
@@ -406,11 +409,25 @@ with c_status:
     # st.write(st.session_state[S_SERVER_LIST])
 
     select_server_options = []
+    select_index: int = 0
+    loop_i = 0
     for server in st.session_state[S_SERVER_LIST]:
         select_server_options.append(server["name"])
-    st.selectbox("Server:", select_server_options )
+        if st.session_state[S_CURRENT_SERVER_NAME] == server["name"]:
+            select_index = loop_i
+        loop_i += 1
 
+    select_server_changed = st.selectbox("Server:", select_server_options, select_index)
+    if not select_server_changed == st.session_state[S_CURRENT_SERVER_NAME]:
+        st.session_state[S_CURRENT_SERVER_NAME] = select_server_changed
+        st.rerun()
+
+    status_mpd_server, result_mpd_server = get_mpd_status(str(st.session_state[S_CURRENT_SERVER_NAME]))
+    if not status_mpd_server == 200:
+        st.stop()
     
+    st.write(result_mpd_server)
+
     # status_mpd_status, result_mpd_status= get_mpd_status()
     # if status_mpd_status == 200:
     #     st.write(result_mpd_status)

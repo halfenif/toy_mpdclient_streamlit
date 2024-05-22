@@ -55,9 +55,9 @@ def get_mpd_server_list():
     except requests.exceptions.RequestException as e:
         request_exception(e, inspect.stack()[0][3])
 
-def get_mpd_status():
+def get_mpd_status(serverName: str):
     try:
-        response = requests.get(backend + inspect.stack()[0][3], params={})
+        response = requests.get(backend + inspect.stack()[0][3], params={"serverName":serverName})
         return result_check(response)
     except requests.exceptions.RequestException as e:
         request_exception(e, inspect.stack()[0][3])

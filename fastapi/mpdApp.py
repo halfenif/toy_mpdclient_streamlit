@@ -9,64 +9,42 @@ import json
 from MpdServer import MpdServer
 from MpdStatus import MpdStatus
 from typing import List
+import mpdUtils
+from mpd import MPDClient
 
 def get_mpd_server_list():
+    status_list, result_list = mpdUtils.get_mpd_server_list()
+    return result_list
+
+def get_mpd_status(serverName:str):
     if config.IS_DEBUG:
-        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] config.MPD_SERVER_LIST:', config.MPD_SERVER_LIST)
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] serverName:', serverName)
 
-    try:
-        servers = json.loads(config.MPD_SERVER_LIST)["servers"]
-    except json.JSONDecodeError as e:
-        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] Exception:', str(e))
-        requestResult = RequestResult()
-        requestResult.result = RESULT_FAIL
-        requestResult.msg = f"MPD_SERVER_IP의 JSON문자열을 확인하시기 바랍니다. {str(e)}"
-        requestResult.method = f'{inspect.stack()[0][3]}'
-        return requestResult 
-    
-    result = []
-    
-    for server in servers:
-        if config.IS_DEBUG:
-            print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] server:', server)
-        
-        mpdServer = MpdServer()
-        mpdServer.name = server["NAME"]
-        mpdServer.display_name = f'{server["IP"]}:{server["PORT"]}'
-        mpdServer.ip = server["IP"]
-        mpdServer.port = server["PORT"]
-
-        result.append(mpdServer)
-        
-    return result
-
-def get_mpd_status():
+    status_server, result_server = mpdUtils.get_mpd_server_by_name(serverName)
     if config.IS_DEBUG:
-        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] config.MPD_SERVER_LIST:', config.MPD_SERVER_LIST)
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] status_server:', status_server)
 
-    try:
-        servers = json.loads(config.MPD_SERVER_LIST)["servers"]
-    except json.JSONDecodeError as e:
-        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] Exception:', str(e))
-        requestResult = RequestResult()
-        requestResult.result = RESULT_FAIL
-        requestResult.msg = f"MPD_SERVER_IP의 JSON문자열을 확인하시기 바랍니다. {str(e)}"
-        requestResult.method = f'{inspect.stack()[0][3]}'
-        return requestResult 
+
+    if status_server:
+        return status_server
     
-    mpdStatus = MpdStatus()
+    if config.IS_DEBUG:
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] result_server:', result_server)
+
+    status_connect, client_connect = mpdUtils.mpd_connect_by_server(result_server)
+    if not status_connect:
+        return status_connect
     
-    for server in servers:
-        if config.IS_DEBUG:
-            print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] server:', server)
-        
-        mpdServer = MpdServer()
-        mpdServer.name = server["NAME"]
-        mpdServer.display_name = f'{server["IP"]}:{server["PORT"]}'
-        mpdServer.ip = server["IP"]
-        mpdServer.port = server["PORT"]
+    if config.IS_DEBUG:
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] client_connect:', client_connect)
 
-        mpdStatus.servers.append(mpdServer)
+    mpd_status = client_connect.status()
+    if config.IS_DEBUG:
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] mpd_status:', mpd_status)
+
+    client_connect.disconnect()
+
+    return mpd_status
 
 
-    return mpdStatus
+
