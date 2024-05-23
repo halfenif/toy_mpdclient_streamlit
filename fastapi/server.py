@@ -13,11 +13,14 @@ import tagApp
 from FileItem import FileItem
 from TagItem import TagItem
 from FolderItem import FolderItem
+from MpdItem import MpdItem
 import const
 from RequestResult import RequestResult
 import fileUtils
 
 import mpdApp
+
+
 
 # --------------------------------------------------------------
 # Application
@@ -44,8 +47,20 @@ def get_mpd_server_list():
 
 # MPD Status
 @app.get("/get_mpd_status")
-def get_mpd_status(serverName:str):
-    return mpdApp.get_mpd_status(serverName)
+def get_mpd_status(mpdItem:MpdItem = Depends()):
+    return mpdApp.get_mpd_status(mpdItem)
+
+# MPD command
+@app.get("/set_mpd_command")
+def set_mpd_command(mpdItem:MpdItem = Depends()):
+    return mpdApp.set_mpd_command(mpdItem)
+
+
+
+
+
+
+
 
 # Folder And File List
 @app.get("/list_folder_and_file_by_path")

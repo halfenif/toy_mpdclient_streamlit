@@ -46,20 +46,9 @@ def get_mpd_server_by_name(serverName:str):
     status_list, result_list = get_mpd_server_list()
 
     if status_list:
-        if config.IS_DEBUG:
-            print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] status_list:', status_list)        
         return status_list, None
-    
-    if config.IS_DEBUG:
-        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] result_list:', result_list)
 
     for server in result_list:
-        if config.IS_DEBUG:
-            print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] type of server:', type(server))
-            print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] server:', server)
-        
-        
-
         if server.name == serverName:
             if config.IS_DEBUG:
                 print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] Find Server:', server)
@@ -70,9 +59,6 @@ def get_mpd_server_by_name(serverName:str):
     requestResult.result = RESULT_FAIL
     requestResult.msg = f"MPD SERVER의 NAME이 존재하지 않습니다. {serverName}"
     requestResult.method = f'{inspect.stack()[0][3]}'
-
-    if config.IS_DEBUG:
-        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] requestResult:', requestResult)
 
     return requestResult, None
 
@@ -91,7 +77,7 @@ def mpd_connect_by_server(server:MpdServer):
         if not client.mpd_version:
             requestResult = RequestResult()
             requestResult.result = RESULT_FAIL
-            requestResult.msg = f'MPD에 연결 할 수 없습니다.[{server.displayName}]'
+            requestResult.msg = f'MPD에 연결 할 수 없습니다.[{server.display_name}]'
             requestResult.method = f'{inspect.stack()[0][3]}'
             return requestResult, None
         
@@ -101,7 +87,7 @@ def mpd_connect_by_server(server:MpdServer):
         print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] Exception:', str(e))
         requestResult = RequestResult()
         requestResult.result = RESULT_FAIL
-        requestResult.msg = f'{str(e)}, {server.displayName}'
+        requestResult.msg = f'{str(e)}, {server.display_name}'
         requestResult.method = f'{inspect.stack()[0][3]}'
         return requestResult, None
 

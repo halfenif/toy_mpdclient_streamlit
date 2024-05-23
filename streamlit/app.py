@@ -4,6 +4,7 @@ config = Settings()
 
 from const import PATH_LOCATION_SOURCE, PATH_LOCATION_TARGET, PATH_TYPE_FOLDER, PATH_TYPE_FILE
 from const import FOLDER_ACTION_RENAME_CURRENT, FOLDER_ACTION_ADD_SUB_FOLDER, FOLDER_ACTION_DELETE_CURRENT, FOLDER_ACTION_UPLOAD_FILE
+
 from session import S_SERVER_LIST, S_CURRENT_SERVER_NAME
 from session import S_CURRENT_SOURCE_FOLDER, S_CURRENT_TARGET_FOLDER # rerun() 했을 때 화면 갱신용
 from session import S_CURRENT_SOURCE_FOLDER_DISPLAY, S_CURRENT_TARGET_FOLDER_DISPLAY # rerun() 했을 때 화면 갱신용
@@ -12,12 +13,20 @@ from session import S_CURRENT_FILE_ITEM # List > Tag Sidebar용
 from session import S_CURRENT_ROOT_TYPE # 상단의 Header Folder용
 from session import S_SB_STATE, S_SB_TAG_SELECT, S_SB_FOLDER_SELECT # Modal대신 Sidebar를 사용하긿 함
 
+from const import MPD_ITEM_STATE
+from const import MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PAUSE, MPD_COMMAND_RESUME, MPD_COMMAND_STATUS
+from const import EMOJI_PLAY, EMOJI_STOP, EMOJI_PAUSE, EMOJI_RESUME, EMOJI_REPEAT, EMOJI_REPEAT_ONE
+
 import streamlit as st
-from api import list_folder_and_file_by_path, file_read_taginfo_by_path, file_write_taginfo_by_path, folder_action, get_mpd_server_list ,get_mpd_status
+from api import list_folder_and_file_by_path, file_read_taginfo_by_path, file_write_taginfo_by_path, folder_action, get_mpd_server_list ,get_mpd_status, set_mpd_command
 from datetime import datetime 
 import uuid
 import os
 import utils
+
+from MpdItem import MpdItem
+
+import copy
 
 # Session -------------------
 if S_SERVER_LIST not in st.session_state:
@@ -390,6 +399,14 @@ if st.session_state[S_SB_FOLDER_SELECT]:
         # Open Side인경우 본화면을 갱신하지 않기 위한 조치
         st.stop()
 
+
+def fn_mpd_command(mpdItem:MpdItem):
+    status_mpd_command, result_mpd_command = set_mpd_command(mpdItem)
+
+    if not status_mpd_command == 200:
+        st.stop()
+
+
 #---------------------------------------------------------------------
 
 
@@ -401,13 +418,13 @@ fn_display_page_header(False)
 # Colums
 c_status, c_target = st.columns(2, gap="small")
 
-
-
 # Container MPD Status
 with c_status:
     # st.write(st.session_state[S_CURRENT_SERVER_NAME])
     # st.write(st.session_state[S_SERVER_LIST])
 
+
+    # Init MPD Server
     select_server_options = []
     select_index: int = 0
     loop_i = 0
@@ -417,16 +434,60 @@ with c_status:
             select_index = loop_i
         loop_i += 1
 
+
+    # Display Select
     select_server_changed = st.selectbox("Server:", select_server_options, select_index)
     if not select_server_changed == st.session_state[S_CURRENT_SERVER_NAME]:
         st.session_state[S_CURRENT_SERVER_NAME] = select_server_changed
         st.rerun()
 
-    status_mpd_server, result_mpd_server = get_mpd_status(str(st.session_state[S_CURRENT_SERVER_NAME]))
-    if not status_mpd_server == 200:
+    # Init MPD Item
+    mpdItem = MpdItem()
+    mpdItem.server_name = str(st.session_state[S_CURRENT_SERVER_NAME])        
+
+    # Call MPD Status
+    mpdItem.command = MPD_COMMAND_STATUS
+    # st.write(mpdItem)
+    # st.stop()
+
+    status_mpd_status, result_mpd_status = get_mpd_status(mpdItem)
+    if not status_mpd_status == 200:
         st.stop()
     
-    st.write(result_mpd_server)
+
+    if MPD_ITEM_STATE in result_mpd_status:
+
+        #st.write(result_mpd_status)
+
+        col_play_btn1, col_play_btn2, col_play_btn3 = st.columns([0.15, 0.15, 0.7])
+
+        if result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_STOP:
+            with col_play_btn1:
+                mpdItemCopy = copy.copy(mpdItem)
+                mpdItemCopy.command = MPD_COMMAND_PLAY
+                st.button(EMOJI_PLAY, on_click=fn_mpd_command, args=[mpdItemCopy])
+            
+        elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PLAY:
+            with col_play_btn1:
+                mpdItemCopy = copy.copy(mpdItem)
+                mpdItemCopy.command = MPD_COMMAND_PAUSE
+                st.button(EMOJI_PAUSE, on_click=fn_mpd_command, args=[mpdItemCopy])
+
+            with col_play_btn2:
+                mpdItemCopy = copy.copy(mpdItem)
+                mpdItemCopy.command = MPD_COMMAND_STOP
+                st.button(EMOJI_STOP, on_click=fn_mpd_command, args=[mpdItemCopy])
+
+        elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PAUSE:
+            with col_play_btn1:
+                mpdItemCopy = copy.copy(mpdItem)
+                mpdItemCopy.command = MPD_COMMAND_RESUME
+                st.button(EMOJI_RESUME, on_click=fn_mpd_command, args=[mpdItemCopy])
+
+            with col_play_btn2:
+                mpdItemCopy = copy.copy(mpdItem)
+                mpdItemCopy.command = MPD_COMMAND_STOP
+                st.button(EMOJI_STOP, on_click=fn_mpd_command, args=[mpdItemCopy])
 
     # status_mpd_status, result_mpd_status= get_mpd_status()
     # if status_mpd_status == 200:

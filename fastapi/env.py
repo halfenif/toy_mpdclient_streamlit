@@ -6,7 +6,6 @@ class Settings(BaseSettings):
     MPD_SERVER_LIST: str
     UI_OPTION_SHORT_FILE_NAME: bool
     UI_OPTION_SHORT_FILE_LENGTH: int
-    FILE_OPTION_UPLOAD_LIMIT_MB: int
 
     model_config = SettingsConfigDict(
         # Load .env first

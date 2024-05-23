@@ -55,12 +55,22 @@ def get_mpd_server_list():
     except requests.exceptions.RequestException as e:
         request_exception(e, inspect.stack()[0][3])
 
-def get_mpd_status(serverName: str):
+def get_mpd_status(mpdItem: any):
     try:
-        response = requests.get(backend + inspect.stack()[0][3], params={"serverName":serverName})
+        response = requests.get(backend + inspect.stack()[0][3], params=mpdItem)
         return result_check(response)
     except requests.exceptions.RequestException as e:
         request_exception(e, inspect.stack()[0][3])
+
+def set_mpd_command(mpdItem: any):
+    try:
+        response = requests.get(backend + inspect.stack()[0][3], params=mpdItem)
+        return result_check(response)
+    except requests.exceptions.RequestException as e:
+        request_exception(e, inspect.stack()[0][3])
+
+
+
 
 
 def list_folder_and_file_by_path(rootType: str, pathEncode: str):
