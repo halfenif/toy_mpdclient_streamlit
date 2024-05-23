@@ -34,6 +34,8 @@ def get_mpd_status(mpdItem:MpdItem):
 
     result = {**mpd_status, **mpd_stats}
     if config.IS_DEBUG:
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] mpd_status:', mpd_status)
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] mpd_stats:', mpd_stats)
         print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] result:', result)
 
     return result

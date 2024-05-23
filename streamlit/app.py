@@ -12,10 +12,10 @@ from session import S_CURRENT_TAG_ITEM # Tag Sidebar > API Server용
 from session import S_CURRENT_FILE_ITEM # List > Tag Sidebar용
 from session import S_CURRENT_ROOT_TYPE # 상단의 Header Folder용
 from session import S_SB_STATE, S_SB_TAG_SELECT, S_SB_FOLDER_SELECT # Modal대신 Sidebar를 사용하긿 함
-
+from session import S_UI_VOLUME_CONTROL, S_UI_VOLUME_VALUE
 from const import MPD_ITEM_STATE
-from const import MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PAUSE, MPD_COMMAND_RESUME, MPD_COMMAND_STATUS
-from const import EMOJI_PLAY, EMOJI_STOP, EMOJI_PAUSE, EMOJI_RESUME, EMOJI_REPEAT, EMOJI_REPEAT_ONE
+from const import MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PAUSE, MPD_COMMAND_RESUME, MPD_COMMAND_STATUS, MPD_COMMAND_PREVIOUS, MPD_COMMAND_NEXT
+from const import EMOJI_PLAY, EMOJI_STOP, EMOJI_PAUSE, EMOJI_RESUME, EMOJI_REPEAT, EMOJI_REPEAT_ONE, EMOJI_PREVIOUS, EMOJI_NEXT
 
 import streamlit as st
 from api import list_folder_and_file_by_path, file_read_taginfo_by_path, file_write_taginfo_by_path, folder_action, get_mpd_server_list ,get_mpd_status, set_mpd_command
@@ -406,7 +406,17 @@ def fn_mpd_command(mpdItem:MpdItem):
     if not status_mpd_command == 200:
         st.stop()
 
+def fn_mpd_volume():
+    # st.session_state[S_UI_VOLUME]
 
+    st.write(st.session_state[S_UI_VOLUME_VALUE])
+    # st.write(st.session_state[S_UI_VOLUME_CONTROL])
+    # status_mpd_command, result_mpd_command = set_mpd_command(mpdItem)
+
+    # if not status_mpd_command == 200:
+    #     st.stop()
+
+    st.write("call")
 #---------------------------------------------------------------------
 
 
@@ -457,37 +467,57 @@ with c_status:
 
     if MPD_ITEM_STATE in result_mpd_status:
 
-        #st.write(result_mpd_status)
+        st.write(result_mpd_status)
 
-        col_play_btn1, col_play_btn2, col_play_btn3 = st.columns([0.15, 0.15, 0.7])
+        if "volume" in result_mpd_status:
+            volume_control = st.empty()
+            st.write(f"Volume exist:{int(result_mpd_status['volume'])}")
+            st.session_state[S_UI_VOLUME_VALUE] = volume_control.slider("Volume", min_value=0, max_value=100, value=int(result_mpd_status["volume"]), step=5, on_change=fn_mpd_volume, key=uuid.uuid4())
+        else:
+            volume_control = st.empty()
+            st.write("Volume not exist")
+            st.session_state[S_UI_VOLUME_VALUE] = volume_control.slider("Volume", min_value=0, max_value=100, value=100, step=5, on_change=fn_mpd_volume, key=uuid.uuid4())
 
-        if result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_STOP:
-            with col_play_btn1:
-                mpdItemCopy = copy.copy(mpdItem)
-                mpdItemCopy.command = MPD_COMMAND_PLAY
-                st.button(EMOJI_PLAY, on_click=fn_mpd_command, args=[mpdItemCopy])
+        
+
+
+        
+        
+        
+        col_play_btn1, col_play_btn2, col_play_btn3, col_play_btn4, col_play_btn5, col_play_btn6, col_play_btn_right = st.columns([0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.1])
+           
+
+        with col_play_btn1:
+            mpdItemCopy = copy.copy(mpdItem)
+            mpdItemCopy.command = MPD_COMMAND_PLAY
+            st.button(EMOJI_PLAY, on_click=fn_mpd_command, args=[mpdItemCopy])
+
+        with col_play_btn2:
+            mpdItemCopy = copy.copy(mpdItem)
+            mpdItemCopy.command = MPD_COMMAND_STOP
+            st.button(EMOJI_STOP, on_click=fn_mpd_command, args=[mpdItemCopy])
+        
+        # btn3 is empty
             
-        elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PLAY:
-            with col_play_btn1:
-                mpdItemCopy = copy.copy(mpdItem)
-                mpdItemCopy.command = MPD_COMMAND_PAUSE
-                st.button(EMOJI_PAUSE, on_click=fn_mpd_command, args=[mpdItemCopy])
+        with col_play_btn4:
+            mpdItemCopy = copy.copy(mpdItem)
+            mpdItemCopy.command = MPD_COMMAND_PREVIOUS
+            st.button(EMOJI_PREVIOUS, on_click=fn_mpd_command, args=[mpdItemCopy])
 
-            with col_play_btn2:
-                mpdItemCopy = copy.copy(mpdItem)
-                mpdItemCopy.command = MPD_COMMAND_STOP
-                st.button(EMOJI_STOP, on_click=fn_mpd_command, args=[mpdItemCopy])
-
-        elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PAUSE:
-            with col_play_btn1:
-                mpdItemCopy = copy.copy(mpdItem)
+        with col_play_btn5:
+            mpdItemCopy = copy.copy(mpdItem)
+            if result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PAUSE:            
                 mpdItemCopy.command = MPD_COMMAND_RESUME
                 st.button(EMOJI_RESUME, on_click=fn_mpd_command, args=[mpdItemCopy])
-
-            with col_play_btn2:
-                mpdItemCopy = copy.copy(mpdItem)
-                mpdItemCopy.command = MPD_COMMAND_STOP
-                st.button(EMOJI_STOP, on_click=fn_mpd_command, args=[mpdItemCopy])
+            elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PLAY:
+                mpdItemCopy.command = MPD_COMMAND_PAUSE
+                st.button(EMOJI_PAUSE, on_click=fn_mpd_command, args=[mpdItemCopy])
+            # else is play == empty
+                
+        with col_play_btn6:
+            mpdItemCopy = copy.copy(mpdItem)
+            mpdItemCopy.command = MPD_COMMAND_NEXT
+            st.button(EMOJI_NEXT, on_click=fn_mpd_command, args=[mpdItemCopy])
 
     # status_mpd_status, result_mpd_status= get_mpd_status()
     # if status_mpd_status == 200:
