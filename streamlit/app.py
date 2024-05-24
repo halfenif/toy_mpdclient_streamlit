@@ -2,17 +2,12 @@
 from env import Settings
 config = Settings()
 
-from const import PATH_LOCATION_SOURCE, PATH_LOCATION_TARGET, PATH_TYPE_FOLDER, PATH_TYPE_FILE
-from const import FOLDER_ACTION_RENAME_CURRENT, FOLDER_ACTION_ADD_SUB_FOLDER, FOLDER_ACTION_DELETE_CURRENT, FOLDER_ACTION_UPLOAD_FILE
+from const import PATH_LOCATION_TARGET, PATH_TYPE_FOLDER, PATH_TYPE_FILE
+
 
 from session import S_SERVER_LIST, S_CURRENT_SERVER_NAME
-from session import S_CURRENT_SOURCE_FOLDER, S_CURRENT_TARGET_FOLDER # rerun() 했을 때 화면 갱신용
-from session import S_CURRENT_SOURCE_FOLDER_DISPLAY, S_CURRENT_TARGET_FOLDER_DISPLAY # rerun() 했을 때 화면 갱신용
-from session import S_CURRENT_TAG_ITEM # Tag Sidebar > API Server용
-from session import S_CURRENT_FILE_ITEM # List > Tag Sidebar용
-from session import S_CURRENT_ROOT_TYPE # 상단의 Header Folder용
-
-from session import S_SB_STATE, S_SB_TAG_SELECT, S_SB_FOLDER_SELECT # Modal대신 Sidebar를 사용하긿 함
+from session import S_CURRENT_TARGET_FOLDER # rerun() 했을 때 화면 갱신용
+from session import S_CURRENT_TARGET_FOLDER_DISPLAY # rerun() 했을 때 화면 갱신용
 
 from session import S_UI_VOLUME, S_UI_LOOP_REPEAT, S_UI_LOOP_SINGLE, S_UI_LOOP_RANDOM, S_UI_LOOP_CONSUME, S_UI_QUEE_CLEAR
 
@@ -27,11 +22,8 @@ from const import EMOJI_PLAY, EMOJI_STOP, EMOJI_PAUSE, EMOJI_RESUME, EMOJI_PREVI
 from const import EMOJI_REPEAT, EMOJI_SINGLE, EMOJI_RANDOM, EMOJI_CONSUME
 
 import streamlit as st
-from api import list_folder_and_file_by_path, file_read_taginfo_by_path, file_write_taginfo_by_path, folder_action, get_mpd_server_list ,get_mpd_status, set_mpd_command
-from datetime import datetime 
+from api import list_folder_and_file_by_path, get_mpd_server_list ,get_mpd_status, set_mpd_command
 import uuid
-import os
-import utils
 
 from MpdItem import MpdItem
 
@@ -51,20 +43,8 @@ if S_SERVER_LIST not in st.session_state:
         st.session_state[S_CURRENT_SERVER_NAME] = server["name"]
         break
 
-  
 
 
-
-if S_SB_STATE not in st.session_state:
-    st.session_state[S_SB_STATE] = "collapsed"
-if S_SB_TAG_SELECT not in st.session_state:
-    st.session_state[S_SB_TAG_SELECT] = False
-if S_SB_FOLDER_SELECT not in st.session_state:
-    st.session_state[S_SB_FOLDER_SELECT] = False
-
-if S_CURRENT_SOURCE_FOLDER not in st.session_state:
-    st.session_state[S_CURRENT_SOURCE_FOLDER] = ''
-    st.session_state[S_CURRENT_SOURCE_FOLDER_DISPLAY] = ''
 if S_CURRENT_TARGET_FOLDER not in st.session_state:
     st.session_state[S_CURRENT_TARGET_FOLDER] = ''
     st.session_state[S_CURRENT_TARGET_FOLDER_DISPLAY] = ''
@@ -73,7 +53,6 @@ if S_CURRENT_TARGET_FOLDER not in st.session_state:
 st.set_page_config(
     page_title="MPD Client for Home",
     page_icon=":musical_note:",
-    initial_sidebar_state=st.session_state[S_SB_STATE],
     menu_items={
         'About': """
 # MPD Client for Home
@@ -88,6 +67,7 @@ Blog: [Enif's small talk](https://blog.enif.page/blog/)
 ---
 
 [MPD](https://www.musicpd.org/) : Music Player Daemon.  
+[python-mpd2](https://python-mpd2.readthedocs.io/en/latest/index.html) : Python MPD lib.
 [Home Assistant](https://www.home-assistant.io/) : My favorite Home Automation platform.  
 
 ---
@@ -107,7 +87,7 @@ st.markdown(
 #---------------------------------------------------------------------
 # Function
 
-def fn_display_page_header(isAddReload: bool):
+def fn_display_page_header():
 
     # Title
     if config.UI_OPTION_TITLE:
@@ -115,15 +95,7 @@ def fn_display_page_header(isAddReload: bool):
     
     if config.UI_OPTION_DESC:
         st.write(config.UI_OPTION_DESC)
-    
-    if isAddReload:
-        #Reload Button for not submit escape
-        button_reload = st.button(":arrows_counterclockwise: Reload")
-        if button_reload:
-            st.session_state[S_SB_TAG_SELECT] = False
-            st.session_state[S_SB_FOLDER_SELECT] = False
-            st.session_state[S_SB_STATE] = "collapsed"        
-            st.rerun()
+
 
 def fn_file_select(fileitem):
     fn_mpd_quee(MPD_COMMAND_QUEE_ADD, fileitem)
@@ -131,9 +103,6 @@ def fn_file_select(fileitem):
 #---------------------------------------------------------------------
 def fn_folder_select(fileitem):
     # Body Folder Select
-    if fileitem["rootType"] == PATH_LOCATION_SOURCE:
-        st.session_state[S_CURRENT_SOURCE_FOLDER] = fileitem["pathEncode"]
-        st.session_state[S_CURRENT_SOURCE_FOLDER_DISPLAY] = fileitem["folderCurrent"]
     if fileitem["rootType"] == PATH_LOCATION_TARGET:
         st.session_state[S_CURRENT_TARGET_FOLDER] = fileitem["pathEncode"]
         st.session_state[S_CURRENT_TARGET_FOLDER_DISPLAY] = fileitem["folderCurrent"]
@@ -217,7 +186,7 @@ def fn_mpd_quee(command:str, item:any):
 
 
 # Page Header
-fn_display_page_header(False)
+fn_display_page_header()
 
 # Colums
 c_status, c_target = st.columns(2, gap="small")

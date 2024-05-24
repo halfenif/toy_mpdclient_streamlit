@@ -10,10 +10,10 @@ import inspect
 from pathlib import Path
 
 import const
-from RequestResult import RequestResult
+
 import fileUtils
 from FileItem import FileItem
-from FolderItem import FolderItem
+
 
 
 # File Item for return
@@ -172,93 +172,3 @@ def list_folder_and_file_by_path(rootType: str, pathEncode: str):
     return fileItems
 
 
-def folder_action(folderItem: FolderItem):
-    if config.IS_DEBUG:
-        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] folderItem:', folderItem)
-    
-    requestResult = RequestResult()
-    requestResult.result = const.RESULT_FAIL # 초기화
-    requestResult.method = f'{inspect.stack()[0][3]}'    
-
-
-    fullPathState, fullPathFrom, isRoot = fileUtils.getFullPath(folderItem.root_type, folderItem.path_encode)
-
-    # Check
-    if fullPathState:
-        return fullPathState
-    
-    new_folder_name = fileUtils.getPathDecode(folderItem.new_folder_name_encode)
-
-    # New Folder Check        
-    if new_folder_name and not fileUtils.is_valid_filename(new_folder_name):
-        requestResult.msg = f"유효하지 않은 Folder명입니다.[{new_folder_name}]"
-        return requestResult    
-
-    if folderItem.folder_command == const.FOLDER_ACTION_RENAME_CURRENT:
-        # Check
-        if isRoot:
-            requestResult.msg = f"Root Folder에 대한 수정은 허용되지 않습니다."
-            return requestResult
-        
-        # Get Base Folder
-        baseFolder = os.path.basename(fullPathFrom)
-        if new_folder_name == baseFolder:
-            requestResult.msg = f"기존 Folder명과 동일합니다.[{new_folder_name}]"
-            return requestResult
-        
-        pathParent = Path(fullPathFrom).parent.__str__()
-        fullPathTo = fileUtils.pathJoin(pathParent, new_folder_name)
-
-        requestResult = fileUtils.mvFolder(fullPathFrom, fullPathTo)
-        if requestResult:
-            return requestResult
-        
-        folderItem.path_encode = fileUtils.getPathEncode(fileUtils.getPathReplace(folderItem.root_type, fullPathTo))
-        folderItem.new_folder_name_display = fileUtils.getPathReplace(folderItem.root_type, fullPathTo)
-        # End----------------
-    elif folderItem.folder_command == const.FOLDER_ACTION_ADD_SUB_FOLDER:
-        fullPathTo = fileUtils.pathJoin(fullPathFrom, new_folder_name)
-
-        add_folder_status = fileUtils.addFolder(fullPathTo)
-        if add_folder_status:
-            requestResult.msg = f"하위 Folder 생성시 예외 발생 [{add_folder_status}]"
-            return requestResult
-        folderItem.path_encode = fileUtils.getPathEncode(fileUtils.getPathReplace(folderItem.root_type, fullPathFrom))
-        folderItem.new_folder_name_display = fileUtils.getPathReplace(folderItem.root_type, fullPathFrom)
-        # End----------------
-    elif folderItem.folder_command == const.FOLDER_ACTION_DELETE_CURRENT:
-        # Check
-        if isRoot:
-            requestResult.msg = f"Root Folder에 대한 삭제는 허용되지 않습니다."
-            return requestResult
-        
-        # Get Parent
-        pathParent = Path(fullPathFrom).parent.__str__()
-
-        requestResult = fileUtils.deleteFolderAndFile(fullPathFrom)
-        if requestResult:
-            return requestResult
-                
-        folderItem.path_encode = fileUtils.getPathEncode(fileUtils.getPathReplace(folderItem.root_type, pathParent))
-        folderItem.new_folder_name_display = fileUtils.getPathReplace(folderItem.root_type, pathParent)
-        # End----------------
-        
-    else:
-        requestResult.msg = f"정의되지 않은 명령어 유형입니다. [{folderItem.folder_command}]"
-        return requestResult
-
-    return folderItem
-
-
-def upload_file(file, fileItem: FileItem):
-
-    pathRoot = fileUtils.getPathRoot(fileItem.root_type)
-    pathFolder = fileUtils.getPathDecode(fileItem.path_encode)
-    fileName = fileUtils.getPathDecode(fileItem.file_name)
-
-
-
-    fullPathTo = fileUtils.pathJoin(pathRoot, pathFolder)
-    fullPathTo = fileUtils.pathJoin(fullPathTo, fileName)
-
-    return fileUtils.write_file(file,fullPathTo)

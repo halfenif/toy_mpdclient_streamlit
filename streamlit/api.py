@@ -6,7 +6,7 @@ import requests
 import streamlit as st
 import const
 import inspect
-from requests_toolbelt.multipart.encoder import MultipartEncoder
+
 
 # interact with FastAPI endpoint
 backend = config.URL_BACKEND
@@ -81,24 +81,3 @@ def list_folder_and_file_by_path(rootType: str, pathEncode: str):
         request_exception(e, inspect.stack()[0][3])
 
     
-def file_read_taginfo_by_path(fileitem: any):
-    try:
-        response = requests.get(backend + inspect.stack()[0][3], params=fileitem)
-        return result_check(response)
-    except requests.exceptions.RequestException as e:
-        request_exception(e, inspect.stack()[0][3])
-
-def file_write_taginfo_by_path(tagitem: any):
-    try:
-        response = requests.get(backend + inspect.stack()[0][3], params=tagitem)
-        return result_check(response)
-    except requests.exceptions.RequestException as e:
-        request_exception(e, inspect.stack()[0][3])
-
-def folder_action(folderitem: any):
-    try:
-        response = requests.get(backend + inspect.stack()[0][3], params=folderitem)
-        return result_check(response)
-    except requests.exceptions.RequestException as e:
-        request_exception(e, inspect.stack()[0][3])
-
