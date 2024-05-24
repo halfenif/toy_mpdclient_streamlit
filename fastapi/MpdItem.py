@@ -6,4 +6,4 @@ class MpdItem(BaseModel):
     command:            str = Field("")
     command_value_int:  int = Field(0)
     song_id:            int = Field(0)
-    song_path:          str = Field("")
+    song_path_encode:   str = Field("")

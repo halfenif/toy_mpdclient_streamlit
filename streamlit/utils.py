@@ -14,4 +14,3 @@ def getPathEncode(path):
     except Exception as e:
         st.write(f"Exception @ Streamlit > utils.py > getPathEncode{str(e)}")
         return "Error", None
-
