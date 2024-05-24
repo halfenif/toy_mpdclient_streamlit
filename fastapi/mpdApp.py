@@ -3,13 +3,15 @@ from env import Settings
 config = Settings()
 
 from const import RESULT_FAIL
+from const import MPD_ITEM_PLAYLIST_QUEE, MPD_ITEM_DISPLAY_NAME
 from const import MPD_COMMAND_PLAY, MPD_COMMAND_PAUSE, MPD_COMMAND_RESUME, MPD_COMMAND_STOP, MPD_COMMAND_STATUS, MPD_COMMAND_PREVIOUS, MPD_COMMAND_NEXT, MPD_COMMAND_VOLUME
 from const import MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME
-
+from const import MPD_COMMAND_QUEE_CLEAR, MPD_COMMAND_QUEE_DELETE, MPD_COMMAND_QUEE_ADD
 import inspect
 from RequestResult import RequestResult
 import mpdUtils
 from MpdItem import MpdItem
+import fileUtils
 
 
 def get_mpd_server_list():
@@ -30,14 +32,27 @@ def get_mpd_status(mpdItem:MpdItem):
     
     mpd_status = client_connect.status()
     mpd_stats = client_connect.stats()
+    mpd_quee_info = client_connect.playlistinfo()
+
     client_connect.disconnect()
 
     result = {**mpd_status, **mpd_stats}
+    if mpd_quee_info:
+        mpd_quee_info_result = []
+
+        for item in mpd_quee_info:
+            if config.UI_OPTION_SHORT_FILE_NAME:
+                item[MPD_ITEM_DISPLAY_NAME] = fileUtils.getDisplayFileName(item["file"])
+            else:
+                item[MPD_ITEM_DISPLAY_NAME] = item["file"]
+            mpd_quee_info_result.append(item)
+        result[MPD_ITEM_PLAYLIST_QUEE] = mpd_quee_info_result
+    
 
     if config.IS_DEBUG:
-        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] mpd_status:', mpd_status)
-        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] mpd_stats:', mpd_stats)
         print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] result:', result)
+
+
 
     return result
 
@@ -78,12 +93,18 @@ def set_mpd_command(mpdItem:MpdItem):
             client_connect.random(mpdItem.command_value_int)
         elif mpdItem.command == MPD_COMMAND_CONSUME:
             client_connect.consume(mpdItem.command_value_int)
+        elif mpdItem.command == MPD_COMMAND_QUEE_CLEAR:
+            client_connect.clear()
+        elif mpdItem.command == MPD_COMMAND_QUEE_DELETE:
+            client_connect.deleteid(mpdItem.song_id)
+        elif mpdItem.command == MPD_COMMAND_QUEE_ADD:
+            client_connect.clear()
         else:
-            print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] os exception:', str(e))
             requestResult = RequestResult()
             requestResult.result = RESULT_FAIL
             requestResult.msg = f"정의되지 않은 COMMAND입니다.[{mpdItem.command}]"
             requestResult.method = f'{inspect.stack()[0][3]}'
+            print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] ', requestResult.msg)
             return requestResult
     except Exception as e:
         print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] MPD command exception:', str(e))

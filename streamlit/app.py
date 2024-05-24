@@ -11,13 +11,18 @@ from session import S_CURRENT_SOURCE_FOLDER_DISPLAY, S_CURRENT_TARGET_FOLDER_DIS
 from session import S_CURRENT_TAG_ITEM # Tag Sidebar > API Server용
 from session import S_CURRENT_FILE_ITEM # List > Tag Sidebar용
 from session import S_CURRENT_ROOT_TYPE # 상단의 Header Folder용
+
 from session import S_SB_STATE, S_SB_TAG_SELECT, S_SB_FOLDER_SELECT # Modal대신 Sidebar를 사용하긿 함
-from session import S_UI_VOLUME, S_UI_LOOP_REPEAT, S_UI_LOOP_SINGLE, S_UI_LOOP_RANDOM, S_UI_LOOP_CONSUME
-from const import MPD_ITEM_STATE
+
+from session import S_UI_VOLUME, S_UI_LOOP_REPEAT, S_UI_LOOP_SINGLE, S_UI_LOOP_RANDOM, S_UI_LOOP_CONSUME, S_UI_QUEE_CLEAR
+
+from const import MPD_ITEM_STATE, MPD_ITEM_PLAYLIST_QUEE, MPD_ITEM_DISPLAY_NAME
+
 from const import MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PAUSE, MPD_COMMAND_RESUME, MPD_COMMAND_STATUS, MPD_COMMAND_PREVIOUS, MPD_COMMAND_NEXT, MPD_COMMAND_VOLUME
 from const import MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME
+from const import MPD_COMMAND_QUEE_CLEAR, MPD_COMMAND_QUEE_DELETE, MPD_COMMAND_QUEE_ADD
 
-from const import EMOJI_NOT_EXIST
+from const import EMOJI_NOT_EXIST, EMOJI_CLEAR_QUEE
 from const import EMOJI_PLAY, EMOJI_STOP, EMOJI_PAUSE, EMOJI_RESUME, EMOJI_PREVIOUS, EMOJI_NEXT
 from const import EMOJI_REPEAT, EMOJI_SINGLE, EMOJI_RANDOM, EMOJI_CONSUME
 
@@ -404,16 +409,6 @@ if st.session_state[S_SB_FOLDER_SELECT]:
         st.stop()
 
 
-def fn_mpd_command(mpdItem:MpdItem):
-    set_mpd_command(mpdItem)
-
-def fn_mpd_volume():
-    # Init MPD Item
-    mpdItem = MpdItem()
-    mpdItem.server_name = str(st.session_state[S_CURRENT_SERVER_NAME])
-    mpdItem.command = MPD_COMMAND_VOLUME
-    mpdItem.command_value_int = int(st.session_state[S_UI_VOLUME])
-    set_mpd_command(mpdItem)
 
 def fn_check_int_bool(int_value:str):
     if int(int_value) == 0:
@@ -425,22 +420,46 @@ def fn_check_bool_int(bool_value:bool):
     if bool_value == True:
         return 1
     else:
-        return 0    
-        
-def fn_mpd_loop(command:str, key:str):
+        return 0
 
-    st.write(command)
-    st.write(key)
+def fn_mpd_command(mpdItem:MpdItem):
+    mpdItem.server_name = str(st.session_state[S_CURRENT_SERVER_NAME])
+    set_mpd_command(mpdItem)
 
+def fn_mpd_volume():
     # Init MPD Item
     mpdItem = MpdItem()
-    mpdItem.server_name = str(st.session_state[S_CURRENT_SERVER_NAME])
+    mpdItem.command = MPD_COMMAND_VOLUME
+    mpdItem.command_value_int = int(st.session_state[S_UI_VOLUME])
+    fn_mpd_command(mpdItem)
+
+
+        
+def fn_mpd_loop(command:str, key:str):
+    # Init MPD Item
+    mpdItem = MpdItem()
     mpdItem.command = command
 
     bool_value = st.session_state[key]
     mpdItem.command_value_int = fn_check_bool_int(bool_value)
 
-    set_mpd_command(mpdItem)
+    fn_mpd_command(mpdItem)
+
+def fn_mpd_quee(command:str, item:any):
+    # Init MPD Item
+    mpdItem = MpdItem()
+    mpdItem.command = command
+
+    if command == MPD_COMMAND_QUEE_DELETE:
+        if not "id" in item:
+            st.error(f'{command}: item no attribute playlist quee song "id"')
+            st.stop()
+        mpdItem.song_id = int(item["id"])
+    elif command == MPD_COMMAND_QUEE_ADD:
+        mpdItem.song_path = ""
+
+    fn_mpd_command(mpdItem)
+
 #---------------------------------------------------------------------
 
 
@@ -504,7 +523,7 @@ with c_status:
         with col_play_btn1:
             mpdItemCopy = copy.copy(mpdItem)
             mpdItemCopy.command = MPD_COMMAND_PLAY
-            st.button(EMOJI_PLAY, on_click=fn_mpd_command, args=[mpdItemCopy], help="Play First Song")
+            st.button(EMOJI_PLAY, on_click=fn_mpd_command, args=[mpdItemCopy], help="Play From First Song")
 
         with col_play_btn2:
             mpdItemCopy = copy.copy(mpdItem)
@@ -547,7 +566,7 @@ with c_status:
         if MPD_COMMAND_SINGLE in result_mpd_status:
             with col_loop_2:
                 bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_SINGLE])
-                st.checkbox(f"{EMOJI_SINGLE}", value=bool_value, help="Single==Repeat Once", on_change=fn_mpd_loop, args=[MPD_COMMAND_SINGLE, S_UI_LOOP_SINGLE], key=S_UI_LOOP_SINGLE)
+                st.checkbox(f"{EMOJI_SINGLE}", value=bool_value, help="Single==Play once", on_change=fn_mpd_loop, args=[MPD_COMMAND_SINGLE, S_UI_LOOP_SINGLE], key=S_UI_LOOP_SINGLE)
         else:
             with col_loop_2:
                 st.write(f"{EMOJI_NOT_EXIST}{EMOJI_SINGLE}")
@@ -563,10 +582,19 @@ with c_status:
         if MPD_COMMAND_CONSUME in result_mpd_status:
             with col_loop_4:
                 bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_CONSUME])
-                st.checkbox(f"{EMOJI_CONSUME}", value=bool_value, help="Consume==Remove after play", on_change=fn_mpd_loop, args=[MPD_COMMAND_CONSUME, S_UI_LOOP_CONSUME], key=S_UI_LOOP_CONSUME)
+                st.checkbox(f"{EMOJI_CONSUME}", value=bool_value, help="Consume==Remove song from playlist after play", on_change=fn_mpd_loop, args=[MPD_COMMAND_CONSUME, S_UI_LOOP_CONSUME], key=S_UI_LOOP_CONSUME)
         else:
             with col_loop_4:
                 st.write(f"{EMOJI_NOT_EXIST}{EMOJI_CONSUME}")
+        
+        if MPD_ITEM_PLAYLIST_QUEE in result_mpd_status:
+            col_quee_1, col_quee_2= st.columns([0.6, 0.4])
+            with col_quee_2:
+                st.button(f"{EMOJI_CLEAR_QUEE} Clear Quee", on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_CLEAR, S_UI_QUEE_CLEAR], key=S_UI_QUEE_CLEAR)
+            
+            for item in result_mpd_status[MPD_ITEM_PLAYLIST_QUEE]:
+                st.button(f'{EMOJI_CLEAR_QUEE} {item[MPD_ITEM_DISPLAY_NAME]}', on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_DELETE, item], key=uuid.uuid4())
+                
 
     #Debug
     if config.IS_DEBUG:
