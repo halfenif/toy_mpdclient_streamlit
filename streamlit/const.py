@@ -20,6 +20,7 @@ FOLDER_ACTION_UPLOAD_FILE="U"
 MPD_ITEM_STATE="state"
 MPD_ITEM_PLAYLIST_QUEE="playlist_quee"
 MPD_ITEM_DISPLAY_NAME="display_name"
+MPD_ITEM_CURRENT_SONG="current_song"
 
 MPD_COMMAND_STATUS="status"
 MPD_COMMAND_PLAY="play"
@@ -52,5 +53,7 @@ EMOJI_RANDOM=":twisted_rightwards_arrows:"
 EMOJI_CONSUME=":put_litter_in_its_place:"
 
 EMOJI_NOT_EXIST=":x:"
-EMOJI_CLEAR_QUEE=":wastebasket:"
+EMOJI_QUEE_CLEAR=":boom:"
+EMOJI_QUEE_DELETE=":wastebasket:"
+EMOJI_REFRESH=":arrows_counterclockwise:"
 

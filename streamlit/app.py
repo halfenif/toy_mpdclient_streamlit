@@ -16,13 +16,13 @@ from session import S_SB_STATE, S_SB_TAG_SELECT, S_SB_FOLDER_SELECT # ModalëŒ€ì‹
 
 from session import S_UI_VOLUME, S_UI_LOOP_REPEAT, S_UI_LOOP_SINGLE, S_UI_LOOP_RANDOM, S_UI_LOOP_CONSUME, S_UI_QUEE_CLEAR
 
-from const import MPD_ITEM_STATE, MPD_ITEM_PLAYLIST_QUEE, MPD_ITEM_DISPLAY_NAME
+from const import MPD_ITEM_STATE, MPD_ITEM_PLAYLIST_QUEE, MPD_ITEM_DISPLAY_NAME, MPD_ITEM_CURRENT_SONG
 
 from const import MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PAUSE, MPD_COMMAND_RESUME, MPD_COMMAND_STATUS, MPD_COMMAND_PREVIOUS, MPD_COMMAND_NEXT, MPD_COMMAND_VOLUME
 from const import MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME
 from const import MPD_COMMAND_QUEE_CLEAR, MPD_COMMAND_QUEE_DELETE, MPD_COMMAND_QUEE_ADD
 
-from const import EMOJI_NOT_EXIST, EMOJI_CLEAR_QUEE
+from const import EMOJI_NOT_EXIST, EMOJI_QUEE_CLEAR, EMOJI_QUEE_DELETE, EMOJI_REFRESH
 from const import EMOJI_PLAY, EMOJI_STOP, EMOJI_PAUSE, EMOJI_RESUME, EMOJI_PREVIOUS, EMOJI_NEXT
 from const import EMOJI_REPEAT, EMOJI_SINGLE, EMOJI_RANDOM, EMOJI_CONSUME
 
@@ -261,6 +261,13 @@ with c_status:
 
     if MPD_ITEM_STATE in result_mpd_status:
 
+        refresh_clicked = st.button(f"{EMOJI_REFRESH} Refresh")
+        if refresh_clicked:
+            st.rerun()
+
+        if MPD_ITEM_CURRENT_SONG in result_mpd_status:
+            st.info(f"Playing: {result_mpd_status[MPD_ITEM_CURRENT_SONG]}")
+
         # Volume
         if MPD_COMMAND_VOLUME in result_mpd_status:
             volume_control = st.empty()
@@ -341,10 +348,12 @@ with c_status:
         if MPD_ITEM_PLAYLIST_QUEE in result_mpd_status:
             col_quee_1, col_quee_2= st.columns([0.6, 0.4])
             with col_quee_2:
-                st.button(f"{EMOJI_CLEAR_QUEE} Clear Quee", on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_CLEAR, S_UI_QUEE_CLEAR], key=S_UI_QUEE_CLEAR)
+                st.button(f"{EMOJI_QUEE_CLEAR} Clear Quee", on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_CLEAR, S_UI_QUEE_CLEAR], key=S_UI_QUEE_CLEAR)
             
             for item in result_mpd_status[MPD_ITEM_PLAYLIST_QUEE]:
-                st.button(f'{EMOJI_CLEAR_QUEE} {item[MPD_ITEM_DISPLAY_NAME]}', on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_DELETE, item], key=uuid.uuid4())
+                st.button(f'{EMOJI_QUEE_DELETE} {item[MPD_ITEM_DISPLAY_NAME]}', on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_DELETE, item], key=uuid.uuid4())
+        else:
+            st.warning("Playlist Quee is empty")
                 
 
     #Debug

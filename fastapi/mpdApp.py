@@ -3,8 +3,7 @@ from env import Settings
 config = Settings()
 
 from const import RESULT_FAIL
-from const import PATH_LOCATION_TARGET
-from const import MPD_ITEM_PLAYLIST_QUEE, MPD_ITEM_DISPLAY_NAME
+from const import MPD_ITEM_PLAYLIST_QUEE, MPD_ITEM_DISPLAY_NAME, MPD_ITEM_CURRENT_SONG
 from const import MPD_COMMAND_PLAY, MPD_COMMAND_PAUSE, MPD_COMMAND_RESUME, MPD_COMMAND_STOP, MPD_COMMAND_STATUS, MPD_COMMAND_PREVIOUS, MPD_COMMAND_NEXT, MPD_COMMAND_VOLUME
 from const import MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME
 from const import MPD_COMMAND_QUEE_CLEAR, MPD_COMMAND_QUEE_DELETE, MPD_COMMAND_QUEE_ADD
@@ -36,6 +35,7 @@ def get_mpd_status(mpdItem:MpdItem):
     mpd_status = client_connect.status()
     mpd_stats = client_connect.stats()
     mpd_quee_info = client_connect.playlistinfo()
+    mpd_current_song = client_connect.currentsong()
 
     client_connect.disconnect()
 
@@ -53,6 +53,8 @@ def get_mpd_status(mpdItem:MpdItem):
             mpd_quee_info_result.append(item)
         result[MPD_ITEM_PLAYLIST_QUEE] = mpd_quee_info_result
     
+    if mpd_current_song:
+        result[MPD_ITEM_CURRENT_SONG] = mpd_current_song["file"]
 
     if config.IS_DEBUG:
         print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] result:', result)
