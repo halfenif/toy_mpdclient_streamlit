@@ -12,10 +12,14 @@ from session import S_CURRENT_TAG_ITEM # Tag Sidebar > API Server용
 from session import S_CURRENT_FILE_ITEM # List > Tag Sidebar용
 from session import S_CURRENT_ROOT_TYPE # 상단의 Header Folder용
 from session import S_SB_STATE, S_SB_TAG_SELECT, S_SB_FOLDER_SELECT # Modal대신 Sidebar를 사용하긿 함
-from session import S_UI_VOLUME_CONTROL, S_UI_VOLUME_VALUE
+from session import S_UI_VOLUME, S_UI_LOOP_REPEAT, S_UI_LOOP_SINGLE, S_UI_LOOP_RANDOM, S_UI_LOOP_CONSUME
 from const import MPD_ITEM_STATE
-from const import MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PAUSE, MPD_COMMAND_RESUME, MPD_COMMAND_STATUS, MPD_COMMAND_PREVIOUS, MPD_COMMAND_NEXT
-from const import EMOJI_PLAY, EMOJI_STOP, EMOJI_PAUSE, EMOJI_RESUME, EMOJI_REPEAT, EMOJI_REPEAT_ONE, EMOJI_PREVIOUS, EMOJI_NEXT
+from const import MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PAUSE, MPD_COMMAND_RESUME, MPD_COMMAND_STATUS, MPD_COMMAND_PREVIOUS, MPD_COMMAND_NEXT, MPD_COMMAND_VOLUME
+from const import MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME
+
+from const import EMOJI_NOT_EXIST
+from const import EMOJI_PLAY, EMOJI_STOP, EMOJI_PAUSE, EMOJI_RESUME, EMOJI_PREVIOUS, EMOJI_NEXT
+from const import EMOJI_REPEAT, EMOJI_SINGLE, EMOJI_RANDOM, EMOJI_CONSUME
 
 import streamlit as st
 from api import list_folder_and_file_by_path, file_read_taginfo_by_path, file_write_taginfo_by_path, folder_action, get_mpd_server_list ,get_mpd_status, set_mpd_command
@@ -401,22 +405,42 @@ if st.session_state[S_SB_FOLDER_SELECT]:
 
 
 def fn_mpd_command(mpdItem:MpdItem):
-    status_mpd_command, result_mpd_command = set_mpd_command(mpdItem)
-
-    if not status_mpd_command == 200:
-        st.stop()
+    set_mpd_command(mpdItem)
 
 def fn_mpd_volume():
-    # st.session_state[S_UI_VOLUME]
+    # Init MPD Item
+    mpdItem = MpdItem()
+    mpdItem.server_name = str(st.session_state[S_CURRENT_SERVER_NAME])
+    mpdItem.command = MPD_COMMAND_VOLUME
+    mpdItem.command_value_int = int(st.session_state[S_UI_VOLUME])
+    set_mpd_command(mpdItem)
 
-    st.write(st.session_state[S_UI_VOLUME_VALUE])
-    # st.write(st.session_state[S_UI_VOLUME_CONTROL])
-    # status_mpd_command, result_mpd_command = set_mpd_command(mpdItem)
+def fn_check_int_bool(int_value:str):
+    if int(int_value) == 0:
+        return False
+    else:
+        return True
+    
+def fn_check_bool_int(bool_value:bool):
+    if bool_value == True:
+        return 1
+    else:
+        return 0    
+        
+def fn_mpd_loop(command:str, key:str):
 
-    # if not status_mpd_command == 200:
-    #     st.stop()
+    st.write(command)
+    st.write(key)
 
-    st.write("call")
+    # Init MPD Item
+    mpdItem = MpdItem()
+    mpdItem.server_name = str(st.session_state[S_CURRENT_SERVER_NAME])
+    mpdItem.command = command
+
+    bool_value = st.session_state[key]
+    mpdItem.command_value_int = fn_check_bool_int(bool_value)
+
+    set_mpd_command(mpdItem)
 #---------------------------------------------------------------------
 
 
@@ -453,7 +477,7 @@ with c_status:
 
     # Init MPD Item
     mpdItem = MpdItem()
-    mpdItem.server_name = str(st.session_state[S_CURRENT_SERVER_NAME])        
+    mpdItem.server_name = str(st.session_state[S_CURRENT_SERVER_NAME])
 
     # Call MPD Status
     mpdItem.command = MPD_COMMAND_STATUS
@@ -467,30 +491,20 @@ with c_status:
 
     if MPD_ITEM_STATE in result_mpd_status:
 
-        st.write(result_mpd_status)
-
-        if "volume" in result_mpd_status:
+        # Volume
+        if MPD_COMMAND_VOLUME in result_mpd_status:
             volume_control = st.empty()
-            st.write(f"Volume exist:{int(result_mpd_status['volume'])}")
-            st.session_state[S_UI_VOLUME_VALUE] = volume_control.slider("Volume", min_value=0, max_value=100, value=int(result_mpd_status["volume"]), step=5, on_change=fn_mpd_volume, key=uuid.uuid4())
+            volume_control.slider("Volume", min_value=0, max_value=100, value=int(result_mpd_status["volume"]), step=5, on_change=fn_mpd_volume, key=S_UI_VOLUME)
         else:
-            volume_control = st.empty()
-            st.write("Volume not exist")
-            st.session_state[S_UI_VOLUME_VALUE] = volume_control.slider("Volume", min_value=0, max_value=100, value=100, step=5, on_change=fn_mpd_volume, key=uuid.uuid4())
+            st.warning(f'{str(st.session_state[S_CURRENT_SERVER_NAME])} not support volume')
 
-        
-
-
-        
-        
-        
+        #----------------------------        
+        # Play Buttons        
         col_play_btn1, col_play_btn2, col_play_btn3, col_play_btn4, col_play_btn5, col_play_btn6, col_play_btn_right = st.columns([0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.1])
-           
-
         with col_play_btn1:
             mpdItemCopy = copy.copy(mpdItem)
             mpdItemCopy.command = MPD_COMMAND_PLAY
-            st.button(EMOJI_PLAY, on_click=fn_mpd_command, args=[mpdItemCopy])
+            st.button(EMOJI_PLAY, on_click=fn_mpd_command, args=[mpdItemCopy], help="Play First Song")
 
         with col_play_btn2:
             mpdItemCopy = copy.copy(mpdItem)
@@ -518,6 +532,45 @@ with c_status:
             mpdItemCopy = copy.copy(mpdItem)
             mpdItemCopy.command = MPD_COMMAND_NEXT
             st.button(EMOJI_NEXT, on_click=fn_mpd_command, args=[mpdItemCopy])
+
+        #----------------------------        
+        # Loop Buttons        
+        col_loop_1, col_loop_2, col_loop_3, col_loop_4 = st.columns([0.25, 0.25, 0.25, 0.25])
+        if MPD_COMMAND_REPEAT in result_mpd_status:
+            with col_loop_1:
+                bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_REPEAT])
+                st.checkbox(f"{EMOJI_REPEAT}", value=bool_value, help="Repeat", on_change=fn_mpd_loop, args=[MPD_COMMAND_REPEAT, S_UI_LOOP_REPEAT], key=S_UI_LOOP_REPEAT)
+        else:
+            with col_loop_1:
+                st.write(f"{EMOJI_NOT_EXIST}{EMOJI_REPEAT}")
+
+        if MPD_COMMAND_SINGLE in result_mpd_status:
+            with col_loop_2:
+                bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_SINGLE])
+                st.checkbox(f"{EMOJI_SINGLE}", value=bool_value, help="Single==Repeat Once", on_change=fn_mpd_loop, args=[MPD_COMMAND_SINGLE, S_UI_LOOP_SINGLE], key=S_UI_LOOP_SINGLE)
+        else:
+            with col_loop_2:
+                st.write(f"{EMOJI_NOT_EXIST}{EMOJI_SINGLE}")
+        
+        if MPD_COMMAND_RANDOM in result_mpd_status:
+            with col_loop_3:
+                bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_RANDOM])
+                st.checkbox(f"{EMOJI_RANDOM}", value=bool_value, help="Random", on_change=fn_mpd_loop, args=[MPD_COMMAND_RANDOM, S_UI_LOOP_RANDOM], key=S_UI_LOOP_RANDOM)
+        else:
+            with col_loop_3:
+                st.write(f"{EMOJI_NOT_EXIST}{EMOJI_RANDOM}")
+
+        if MPD_COMMAND_CONSUME in result_mpd_status:
+            with col_loop_4:
+                bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_CONSUME])
+                st.checkbox(f"{EMOJI_CONSUME}", value=bool_value, help="Consume==Remove after play", on_change=fn_mpd_loop, args=[MPD_COMMAND_CONSUME, S_UI_LOOP_CONSUME], key=S_UI_LOOP_CONSUME)
+        else:
+            with col_loop_4:
+                st.write(f"{EMOJI_NOT_EXIST}{EMOJI_CONSUME}")
+
+    #Debug
+    if config.IS_DEBUG:
+        st.write(result_mpd_status)
 
     # status_mpd_status, result_mpd_status= get_mpd_status()
     # if status_mpd_status == 200:
