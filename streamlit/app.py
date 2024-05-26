@@ -10,6 +10,10 @@ from session import S_CURRENT_TARGET_FOLDER # rerun() 했을 때 화면 갱신�
 from session import S_CURRENT_TARGET_FOLDER_DISPLAY # rerun() 했을 때 화면 갱신용
 
 from session import S_UI_VOLUME, S_UI_LOOP_REPEAT, S_UI_LOOP_SINGLE, S_UI_LOOP_RANDOM, S_UI_LOOP_CONSUME, S_UI_QUEE_CLEAR
+from session import S_UI_SELECT_COMMAND_PLAY, S_UI_SELECT_COMMAND_LOOP, S_UI_SELECT_COMMAND_QUEE, S_UI_SELECT_COMMAND_TARGET
+from session import S_UI_QUEE_ITEM_COMMAND_CLEAR, S_UI_QUEE_ITEM_COMMAND_REMOVE, S_UI_QUEE_ITEM_COMMAND_UP, S_UI_QUEE_ITEM_COMMAND_DOWN
+
+from session import S_CURRENT_SELECT_ITEM_QUEE
 
 from const import MPD_ITEM_STATE, MPD_ITEM_PLAYLIST_QUEE, MPD_ITEM_DISPLAY_NAME, MPD_ITEM_CURRENT_SONG
 
@@ -20,6 +24,8 @@ from const import MPD_COMMAND_QUEE_CLEAR, MPD_COMMAND_QUEE_DELETE, MPD_COMMAND_Q
 from const import EMOJI_NOT_EXIST, EMOJI_QUEE_CLEAR, EMOJI_QUEE_DELETE, EMOJI_REFRESH
 from const import EMOJI_PLAY, EMOJI_STOP, EMOJI_PAUSE, EMOJI_RESUME, EMOJI_PREVIOUS, EMOJI_NEXT
 from const import EMOJI_REPEAT, EMOJI_SINGLE, EMOJI_RANDOM, EMOJI_CONSUME
+from const import EMOJI_REMOVE, EMOJI_ADD, EMOJI_UP, EMOJI_DOWN
+
 
 import streamlit as st
 from api import list_folder_and_file_by_path, get_mpd_server_list ,get_mpd_status, set_mpd_command
@@ -48,6 +54,12 @@ if S_SERVER_LIST not in st.session_state:
 if S_CURRENT_TARGET_FOLDER not in st.session_state:
     st.session_state[S_CURRENT_TARGET_FOLDER] = ''
     st.session_state[S_CURRENT_TARGET_FOLDER_DISPLAY] = ''
+
+if S_CURRENT_SELECT_ITEM_QUEE not in st.session_state:
+    st.session_state[S_CURRENT_SELECT_ITEM_QUEE] = S_UI_QUEE_ITEM_COMMAND_REMOVE
+
+
+
 
 # Page Setup
 st.set_page_config(
@@ -180,6 +192,38 @@ def fn_mpd_quee(command:str, item:any):
 
     fn_mpd_command(mpdItem)
 
+
+def fn_select_command_play():
+    st.write(st.session_state[S_UI_SELECT_COMMAND_PLAY])
+    
+
+def fn_select_command_loop():
+    st.write(st.session_state[S_UI_SELECT_COMMAND_LOOP])
+
+
+def fn_select_command_quee():
+    if st.session_state[S_UI_SELECT_COMMAND_QUEE] == S_UI_QUEE_ITEM_COMMAND_CLEAR:
+        # Init MPD Item
+        mpdItem = MpdItem()
+        mpdItem.command = MPD_COMMAND_QUEE_CLEAR
+        fn_mpd_command(mpdItem)
+        # st.button(f"{EMOJI_QUEE_CLEAR} Clear Quee", on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_CLEAR, S_UI_QUEE_CLEAR], key=S_UI_QUEE_CLEAR)
+
+    elif st.session_state[S_UI_SELECT_COMMAND_QUEE] == S_UI_QUEE_ITEM_COMMAND_REMOVE:
+        st.session_state[S_CURRENT_SELECT_ITEM_QUEE] = S_UI_QUEE_ITEM_COMMAND_REMOVE
+    elif st.session_state[S_UI_SELECT_COMMAND_QUEE] == S_UI_QUEE_ITEM_COMMAND_UP:
+        st.session_state[S_CURRENT_SELECT_ITEM_QUEE] = S_UI_QUEE_ITEM_COMMAND_UP
+    elif st.session_state[S_UI_SELECT_COMMAND_QUEE] == S_UI_QUEE_ITEM_COMMAND_DOWN:
+        st.session_state[S_CURRENT_SELECT_ITEM_QUEE] = S_UI_QUEE_ITEM_COMMAND_DOWN
+    else:
+        st.error(f"Not defined quee command: {st.session_state[S_CURRENT_SELECT_ITEM_QUEE]}")
+        
+        
+
+
+def fn_select_command_target():
+    st.write(st.session_state[S_UI_SELECT_COMMAND_TARGET])
+
 #---------------------------------------------------------------------
 
 
@@ -209,7 +253,7 @@ with c_status:
 
 
     # Display Select
-    select_server_changed = st.selectbox("Server:", select_server_options, select_index)
+    select_server_changed = st.selectbox("Server", select_server_options, select_index)
     if not select_server_changed == st.session_state[S_CURRENT_SERVER_NAME]:
         st.session_state[S_CURRENT_SERVER_NAME] = select_server_changed
         st.rerun()
@@ -234,8 +278,11 @@ with c_status:
         if refresh_clicked:
             st.rerun()
 
-        if MPD_ITEM_CURRENT_SONG in result_mpd_status:
-            st.info(f"Playing: {result_mpd_status[MPD_ITEM_CURRENT_SONG]}")
+        # Current Song if play
+        if result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PLAY:
+            if MPD_ITEM_CURRENT_SONG in result_mpd_status:
+                st.write("Playing")
+                st.info(f"{result_mpd_status[MPD_ITEM_CURRENT_SONG]}")
 
         # Volume
         if MPD_COMMAND_VOLUME in result_mpd_status:
@@ -244,85 +291,141 @@ with c_status:
         else:
             st.warning(f'{str(st.session_state[S_CURRENT_SERVER_NAME])} not support volume')
 
-        #----------------------------        
-        # Play Buttons        
-        col_play_btn1, col_play_btn2, col_play_btn3, col_play_btn4, col_play_btn5, col_play_btn6, col_play_btn_right = st.columns([0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.1])
-        with col_play_btn1:
-            mpdItemCopy = copy.copy(mpdItem)
-            mpdItemCopy.command = MPD_COMMAND_PLAY
-            st.button(EMOJI_PLAY, on_click=fn_mpd_command, args=[mpdItemCopy], help="Play From First Song")
-
-        with col_play_btn2:
-            mpdItemCopy = copy.copy(mpdItem)
-            mpdItemCopy.command = MPD_COMMAND_STOP
-            st.button(EMOJI_STOP, on_click=fn_mpd_command, args=[mpdItemCopy])
+        # play button
+        if result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_STOP:
+            play_command_options = [MPD_COMMAND_PLAY]
+        elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PAUSE:
+            play_command_options = [MPD_COMMAND_PLAY, MPD_COMMAND_RESUME]
+        elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PLAY:
+            play_command_options = [MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PREVIOUS, MPD_COMMAND_PAUSE, MPD_COMMAND_NEXT]
+        else:
+            play_command_options = [f"? not defined {result_mpd_status[MPD_ITEM_STATE]}"]
         
-        # btn3 is empty
-            
-        with col_play_btn4:
-            mpdItemCopy = copy.copy(mpdItem)
-            mpdItemCopy.command = MPD_COMMAND_PREVIOUS
-            st.button(EMOJI_PREVIOUS, on_click=fn_mpd_command, args=[mpdItemCopy])
+        st.selectbox("Play Command", play_command_options, on_change=fn_select_command_play, key=S_UI_SELECT_COMMAND_PLAY)
 
-        with col_play_btn5:
-            mpdItemCopy = copy.copy(mpdItem)
-            if result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PAUSE:            
-                mpdItemCopy.command = MPD_COMMAND_RESUME
-                st.button(EMOJI_RESUME, on_click=fn_mpd_command, args=[mpdItemCopy])
-            elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PLAY:
-                mpdItemCopy.command = MPD_COMMAND_PAUSE
-                st.button(EMOJI_PAUSE, on_click=fn_mpd_command, args=[mpdItemCopy])
-            # else is play == empty
+        # #----------------------------        
+        # # Play Buttons        
+        # col_play_btn1, col_play_btn2, col_play_btn3, col_play_btn4, col_play_btn5, col_play_btn6, col_play_btn_right = st.columns([0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.1])
+        # with col_play_btn1:
+        #     mpdItemCopy = copy.copy(mpdItem)
+        #     mpdItemCopy.command = MPD_COMMAND_PLAY
+        #     st.button(EMOJI_PLAY, on_click=fn_mpd_command, args=[mpdItemCopy], help="Play From First Song")
+
+        # with col_play_btn2:
+        #     mpdItemCopy = copy.copy(mpdItem)
+        #     mpdItemCopy.command = MPD_COMMAND_STOP
+        #     st.button(EMOJI_STOP, on_click=fn_mpd_command, args=[mpdItemCopy])
+        
+        # # btn3 is empty
+            
+        # with col_play_btn4:
+        #     mpdItemCopy = copy.copy(mpdItem)
+        #     mpdItemCopy.command = MPD_COMMAND_PREVIOUS
+        #     st.button(EMOJI_PREVIOUS, on_click=fn_mpd_command, args=[mpdItemCopy])
+
+        # with col_play_btn5:
+        #     mpdItemCopy = copy.copy(mpdItem)
+        #     if result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PAUSE:            
+        #         mpdItemCopy.command = MPD_COMMAND_RESUME
+        #         st.button(EMOJI_RESUME, on_click=fn_mpd_command, args=[mpdItemCopy])
+        #     elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PLAY:
+        #         mpdItemCopy.command = MPD_COMMAND_PAUSE
+        #         st.button(EMOJI_PAUSE, on_click=fn_mpd_command, args=[mpdItemCopy])
+        #     # else is play == empty
                 
-        with col_play_btn6:
-            mpdItemCopy = copy.copy(mpdItem)
-            mpdItemCopy.command = MPD_COMMAND_NEXT
-            st.button(EMOJI_NEXT, on_click=fn_mpd_command, args=[mpdItemCopy])
+        # with col_play_btn6:
+        #     mpdItemCopy = copy.copy(mpdItem)
+        #     mpdItemCopy.command = MPD_COMMAND_NEXT
+        #     st.button(EMOJI_NEXT, on_click=fn_mpd_command, args=[mpdItemCopy])
 
         #----------------------------        
         # Loop Buttons        
-        col_loop_1, col_loop_2, col_loop_3, col_loop_4 = st.columns([0.25, 0.25, 0.25, 0.25])
+        # col_loop_1, col_loop_2, col_loop_3, col_loop_4 = st.columns([0.25, 0.25, 0.25, 0.25])
+        # if MPD_COMMAND_REPEAT in result_mpd_status:
+        #     with col_loop_1:
+        #         bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_REPEAT])
+        #         st.checkbox(f"{EMOJI_REPEAT}", value=bool_value, help="Repeat", on_change=fn_mpd_loop, args=[MPD_COMMAND_REPEAT, S_UI_LOOP_REPEAT], key=S_UI_LOOP_REPEAT)
+        # else:
+        #     with col_loop_1:
+        #         st.write(f"{EMOJI_NOT_EXIST}{EMOJI_REPEAT}")
+
+        # if MPD_COMMAND_SINGLE in result_mpd_status:
+        #     with col_loop_2:
+        #         bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_SINGLE])
+        #         st.checkbox(f"{EMOJI_SINGLE}", value=bool_value, help="Single==Play once", on_change=fn_mpd_loop, args=[MPD_COMMAND_SINGLE, S_UI_LOOP_SINGLE], key=S_UI_LOOP_SINGLE)
+        # else:
+        #     with col_loop_2:
+        #         st.write(f"{EMOJI_NOT_EXIST}{EMOJI_SINGLE}")
+        
+        # if MPD_COMMAND_RANDOM in result_mpd_status:
+        #     with col_loop_3:
+        #         bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_RANDOM])
+        #         st.checkbox(f"{EMOJI_RANDOM}", value=bool_value, help="Random", on_change=fn_mpd_loop, args=[MPD_COMMAND_RANDOM, S_UI_LOOP_RANDOM], key=S_UI_LOOP_RANDOM)
+        # else:
+        #     with col_loop_3:
+        #         st.write(f"{EMOJI_NOT_EXIST}{EMOJI_RANDOM}")
+
+        # if MPD_COMMAND_CONSUME in result_mpd_status:
+        #     with col_loop_4:
+        #         bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_CONSUME])
+        #         st.checkbox(f"{EMOJI_CONSUME}", value=bool_value, help="Consume==Remove song from playlist after play", on_change=fn_mpd_loop, args=[MPD_COMMAND_CONSUME, S_UI_LOOP_CONSUME], key=S_UI_LOOP_CONSUME)
+        # else:
+        #     with col_loop_4:
+        #         st.write(f"{EMOJI_NOT_EXIST}{EMOJI_CONSUME}")
+
+        # Loop Muliti Select
+        loop_options_base = []
+        loop_options_selected = []
+
         if MPD_COMMAND_REPEAT in result_mpd_status:
-            with col_loop_1:
-                bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_REPEAT])
-                st.checkbox(f"{EMOJI_REPEAT}", value=bool_value, help="Repeat", on_change=fn_mpd_loop, args=[MPD_COMMAND_REPEAT, S_UI_LOOP_REPEAT], key=S_UI_LOOP_REPEAT)
-        else:
-            with col_loop_1:
-                st.write(f"{EMOJI_NOT_EXIST}{EMOJI_REPEAT}")
+            loop_options_base.append(MPD_COMMAND_REPEAT)
+            bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_REPEAT])
+            if bool_value:
+                loop_options_selected.append(MPD_COMMAND_REPEAT)
 
         if MPD_COMMAND_SINGLE in result_mpd_status:
-            with col_loop_2:
-                bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_SINGLE])
-                st.checkbox(f"{EMOJI_SINGLE}", value=bool_value, help="Single==Play once", on_change=fn_mpd_loop, args=[MPD_COMMAND_SINGLE, S_UI_LOOP_SINGLE], key=S_UI_LOOP_SINGLE)
-        else:
-            with col_loop_2:
-                st.write(f"{EMOJI_NOT_EXIST}{EMOJI_SINGLE}")
+            loop_options_base.append(MPD_COMMAND_SINGLE)
+            bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_SINGLE])
+            if bool_value:
+                loop_options_selected.append(MPD_COMMAND_SINGLE)
         
         if MPD_COMMAND_RANDOM in result_mpd_status:
-            with col_loop_3:
-                bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_RANDOM])
-                st.checkbox(f"{EMOJI_RANDOM}", value=bool_value, help="Random", on_change=fn_mpd_loop, args=[MPD_COMMAND_RANDOM, S_UI_LOOP_RANDOM], key=S_UI_LOOP_RANDOM)
-        else:
-            with col_loop_3:
-                st.write(f"{EMOJI_NOT_EXIST}{EMOJI_RANDOM}")
+            loop_options_base.append(MPD_COMMAND_RANDOM)
+            bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_RANDOM])
+            if bool_value:
+                loop_options_selected.append(MPD_COMMAND_RANDOM)
 
         if MPD_COMMAND_CONSUME in result_mpd_status:
-            with col_loop_4:
-                bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_CONSUME])
-                st.checkbox(f"{EMOJI_CONSUME}", value=bool_value, help="Consume==Remove song from playlist after play", on_change=fn_mpd_loop, args=[MPD_COMMAND_CONSUME, S_UI_LOOP_CONSUME], key=S_UI_LOOP_CONSUME)
-        else:
-            with col_loop_4:
-                st.write(f"{EMOJI_NOT_EXIST}{EMOJI_CONSUME}")
+            loop_options_base.append(MPD_COMMAND_CONSUME)
+            bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_CONSUME])
+            if bool_value:
+                loop_options_selected.append(MPD_COMMAND_CONSUME)
+
+        st.multiselect("Loop Options", loop_options_base, loop_options_selected, on_change=fn_select_command_loop, key=S_UI_SELECT_COMMAND_LOOP)
+
+    #-------------------------
+    # Quee
+    if MPD_ITEM_PLAYLIST_QUEE in result_mpd_status:
+        # st.button(f"{EMOJI_QUEE_CLEAR} Clear Quee", on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_CLEAR, S_UI_QUEE_CLEAR], key=S_UI_QUEE_CLEAR)
+
+        quee_command_options = [S_UI_QUEE_ITEM_COMMAND_REMOVE, S_UI_QUEE_ITEM_COMMAND_UP, S_UI_QUEE_ITEM_COMMAND_DOWN, S_UI_QUEE_ITEM_COMMAND_CLEAR]
+        st.selectbox("Quee Command Type", quee_command_options, on_change=fn_select_command_quee, key=S_UI_SELECT_COMMAND_QUEE)
+
         
-        if MPD_ITEM_PLAYLIST_QUEE in result_mpd_status:
-            col_quee_1, col_quee_2= st.columns([0.6, 0.4])
-            with col_quee_2:
-                st.button(f"{EMOJI_QUEE_CLEAR} Clear Quee", on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_CLEAR, S_UI_QUEE_CLEAR], key=S_UI_QUEE_CLEAR)
-            
-            for item in result_mpd_status[MPD_ITEM_PLAYLIST_QUEE]:
-                st.button(f'{EMOJI_QUEE_DELETE} {item[MPD_ITEM_DISPLAY_NAME]}', on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_DELETE, item], key=uuid.uuid4())
+        if st.session_state[S_CURRENT_SELECT_ITEM_QUEE] == S_UI_QUEE_ITEM_COMMAND_REMOVE:
+            emoji_quee = EMOJI_QUEE_DELETE
+        elif st.session_state[S_CURRENT_SELECT_ITEM_QUEE] == S_UI_QUEE_ITEM_COMMAND_UP:
+            emoji_quee = EMOJI_UP
+        elif st.session_state[S_CURRENT_SELECT_ITEM_QUEE] == S_UI_QUEE_ITEM_COMMAND_DOWN:
+            emoji_quee = EMOJI_DOWN
         else:
-            st.warning("Playlist Quee is empty")
+            emoji_quee = EMOJI_QUEE_DELETE
+
+            
+        for item in result_mpd_status[MPD_ITEM_PLAYLIST_QUEE]:
+            st.button(f'{emoji_quee} {item[MPD_ITEM_DISPLAY_NAME]}', on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_DELETE, item], key=uuid.uuid4())
+    else:
+        st.warning("Playlist Quee is empty")
                 
 
     #Debug

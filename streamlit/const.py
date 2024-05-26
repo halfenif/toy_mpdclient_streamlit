@@ -51,3 +51,7 @@ EMOJI_QUEE_CLEAR=":boom:"
 EMOJI_QUEE_DELETE=":wastebasket:"
 EMOJI_REFRESH=":arrows_counterclockwise:"
 
+EMOJI_REMOVE=":heavy_minus_sign:"
+EMOJI_ADD=":heavy_plus_sign:"
+EMOJI_UP=":arrow_up:"
+EMOJI_DOWN=":arrow_down:"
