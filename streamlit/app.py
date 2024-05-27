@@ -11,14 +11,17 @@ from session import S_CURRENT_TARGET_FOLDER_DISPLAY # rerun() 했을 때 화면 
 
 from session import S_UI_VOLUME, S_UI_LOOP_REPEAT, S_UI_LOOP_SINGLE, S_UI_LOOP_RANDOM, S_UI_LOOP_CONSUME, S_UI_QUEE_CLEAR
 from session import S_UI_SELECT_COMMAND_PLAY, S_UI_SELECT_COMMAND_LOOP, S_UI_SELECT_COMMAND_QUEE, S_UI_SELECT_COMMAND_TARGET
-from session import S_UI_QUEE_ITEM_COMMAND_CLEAR, S_UI_QUEE_ITEM_COMMAND_REMOVE, S_UI_QUEE_ITEM_COMMAND_UP, S_UI_QUEE_ITEM_COMMAND_DOWN
+
+from session import S_UI_LOOP_BASE, S_UI_LOOP_SELECTED
+
+from session import S_UI_COMMON_ITEM_SELECT_INIT, S_UI_QUEE_ITEM_COMMAND_CLEAR, S_UI_QUEE_ITEM_COMMAND_REMOVE, S_UI_QUEE_ITEM_COMMAND_UP, S_UI_QUEE_ITEM_COMMAND_DOWN
 
 from session import S_CURRENT_SELECT_ITEM_QUEE
 
 from const import MPD_ITEM_STATE, MPD_ITEM_PLAYLIST_QUEE, MPD_ITEM_DISPLAY_NAME, MPD_ITEM_CURRENT_SONG
 
 from const import MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PAUSE, MPD_COMMAND_RESUME, MPD_COMMAND_STATUS, MPD_COMMAND_PREVIOUS, MPD_COMMAND_NEXT, MPD_COMMAND_VOLUME
-from const import MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME
+from const import MPD_COMMAND_LOOP, MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME
 from const import MPD_COMMAND_QUEE_CLEAR, MPD_COMMAND_QUEE_DELETE, MPD_COMMAND_QUEE_ADD
 
 from const import EMOJI_NOT_EXIST, EMOJI_QUEE_CLEAR, EMOJI_QUEE_DELETE, EMOJI_REFRESH
@@ -166,17 +169,31 @@ def fn_mpd_volume():
     fn_mpd_command(mpdItem)
 
 
-        
-def fn_mpd_loop(command:str, key:str):
+#----------------------------------------        
+# UI에서 Item을 변경 한 경우
+def fn_select_command_loop():
     # Init MPD Item
     mpdItem = MpdItem()
-    mpdItem.command = command
+    mpdItem.command = MPD_COMMAND_LOOP
 
-    bool_value = st.session_state[key]
-    mpdItem.command_value_int = fn_check_bool_int(bool_value)
+    # Loop Conteol은 multi select이고 uuid를 key로 매번 생성된다.
+    loop_selected = st.session_state[st.session_state[S_UI_SELECT_COMMAND_LOOP]]
 
+    if MPD_COMMAND_REPEAT in loop_selected:
+        mpdItem.loop_repeat = 1
+
+    if MPD_COMMAND_RANDOM in loop_selected:
+        mpdItem.loop_random = 1
+
+    if MPD_COMMAND_SINGLE in loop_selected:
+        mpdItem.loop_single = 1
+
+    if MPD_COMMAND_CONSUME in loop_selected:
+        mpdItem.loop_consume = 1
+    
     fn_mpd_command(mpdItem)
 
+#----------------------------------------
 def fn_mpd_quee(command:str, item:any):
     # Init MPD Item
     mpdItem = MpdItem()
@@ -194,11 +211,16 @@ def fn_mpd_quee(command:str, item:any):
 
 
 def fn_select_command_play():
-    st.write(st.session_state[S_UI_SELECT_COMMAND_PLAY])
+    if not st.session_state[S_UI_SELECT_COMMAND_PLAY] == S_UI_COMMON_ITEM_SELECT_INIT:
+        # Init MPD Item
+        mpdItem = MpdItem()
+        mpdItem.command = st.session_state[S_UI_SELECT_COMMAND_PLAY]
+        st.session_state[S_UI_SELECT_COMMAND_PLAY] = S_UI_COMMON_ITEM_SELECT_INIT
+        fn_mpd_command(mpdItem)
+    else:
+        st.error("Current S_UI_SELECT_COMMAND_PLAY is S_UI_COMMON_ITEM_SELECT_INIT")
     
 
-def fn_select_command_loop():
-    st.write(st.session_state[S_UI_SELECT_COMMAND_LOOP])
 
 
 def fn_select_command_quee():
@@ -207,7 +229,6 @@ def fn_select_command_quee():
         mpdItem = MpdItem()
         mpdItem.command = MPD_COMMAND_QUEE_CLEAR
         fn_mpd_command(mpdItem)
-        # st.button(f"{EMOJI_QUEE_CLEAR} Clear Quee", on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_CLEAR, S_UI_QUEE_CLEAR], key=S_UI_QUEE_CLEAR)
 
     elif st.session_state[S_UI_SELECT_COMMAND_QUEE] == S_UI_QUEE_ITEM_COMMAND_REMOVE:
         st.session_state[S_CURRENT_SELECT_ITEM_QUEE] = S_UI_QUEE_ITEM_COMMAND_REMOVE
@@ -293,115 +314,52 @@ with c_status:
 
         # play button
         if result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_STOP:
-            play_command_options = [MPD_COMMAND_PLAY]
+            play_command_options = [S_UI_COMMON_ITEM_SELECT_INIT, MPD_COMMAND_PLAY]
         elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PAUSE:
-            play_command_options = [MPD_COMMAND_PLAY, MPD_COMMAND_RESUME]
+            play_command_options = [S_UI_COMMON_ITEM_SELECT_INIT, MPD_COMMAND_PLAY, MPD_COMMAND_RESUME]
         elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PLAY:
-            play_command_options = [MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PREVIOUS, MPD_COMMAND_PAUSE, MPD_COMMAND_NEXT]
+            play_command_options = [S_UI_COMMON_ITEM_SELECT_INIT, MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PREVIOUS, MPD_COMMAND_PAUSE, MPD_COMMAND_NEXT]
         else:
             play_command_options = [f"? not defined {result_mpd_status[MPD_ITEM_STATE]}"]
-        
-        st.selectbox("Play Command", play_command_options, on_change=fn_select_command_play, key=S_UI_SELECT_COMMAND_PLAY)
 
-        # #----------------------------        
-        # # Play Buttons        
-        # col_play_btn1, col_play_btn2, col_play_btn3, col_play_btn4, col_play_btn5, col_play_btn6, col_play_btn_right = st.columns([0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.1])
-        # with col_play_btn1:
-        #     mpdItemCopy = copy.copy(mpdItem)
-        #     mpdItemCopy.command = MPD_COMMAND_PLAY
-        #     st.button(EMOJI_PLAY, on_click=fn_mpd_command, args=[mpdItemCopy], help="Play From First Song")
+       
+        st.selectbox("Play Command", play_command_options, index=0, on_change=fn_select_command_play, key=S_UI_SELECT_COMMAND_PLAY)
 
-        # with col_play_btn2:
-        #     mpdItemCopy = copy.copy(mpdItem)
-        #     mpdItemCopy.command = MPD_COMMAND_STOP
-        #     st.button(EMOJI_STOP, on_click=fn_mpd_command, args=[mpdItemCopy])
-        
-        # # btn3 is empty
-            
-        # with col_play_btn4:
-        #     mpdItemCopy = copy.copy(mpdItem)
-        #     mpdItemCopy.command = MPD_COMMAND_PREVIOUS
-        #     st.button(EMOJI_PREVIOUS, on_click=fn_mpd_command, args=[mpdItemCopy])
-
-        # with col_play_btn5:
-        #     mpdItemCopy = copy.copy(mpdItem)
-        #     if result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PAUSE:            
-        #         mpdItemCopy.command = MPD_COMMAND_RESUME
-        #         st.button(EMOJI_RESUME, on_click=fn_mpd_command, args=[mpdItemCopy])
-        #     elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PLAY:
-        #         mpdItemCopy.command = MPD_COMMAND_PAUSE
-        #         st.button(EMOJI_PAUSE, on_click=fn_mpd_command, args=[mpdItemCopy])
-        #     # else is play == empty
-                
-        # with col_play_btn6:
-        #     mpdItemCopy = copy.copy(mpdItem)
-        #     mpdItemCopy.command = MPD_COMMAND_NEXT
-        #     st.button(EMOJI_NEXT, on_click=fn_mpd_command, args=[mpdItemCopy])
-
-        #----------------------------        
-        # Loop Buttons        
-        # col_loop_1, col_loop_2, col_loop_3, col_loop_4 = st.columns([0.25, 0.25, 0.25, 0.25])
-        # if MPD_COMMAND_REPEAT in result_mpd_status:
-        #     with col_loop_1:
-        #         bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_REPEAT])
-        #         st.checkbox(f"{EMOJI_REPEAT}", value=bool_value, help="Repeat", on_change=fn_mpd_loop, args=[MPD_COMMAND_REPEAT, S_UI_LOOP_REPEAT], key=S_UI_LOOP_REPEAT)
-        # else:
-        #     with col_loop_1:
-        #         st.write(f"{EMOJI_NOT_EXIST}{EMOJI_REPEAT}")
-
-        # if MPD_COMMAND_SINGLE in result_mpd_status:
-        #     with col_loop_2:
-        #         bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_SINGLE])
-        #         st.checkbox(f"{EMOJI_SINGLE}", value=bool_value, help="Single==Play once", on_change=fn_mpd_loop, args=[MPD_COMMAND_SINGLE, S_UI_LOOP_SINGLE], key=S_UI_LOOP_SINGLE)
-        # else:
-        #     with col_loop_2:
-        #         st.write(f"{EMOJI_NOT_EXIST}{EMOJI_SINGLE}")
-        
-        # if MPD_COMMAND_RANDOM in result_mpd_status:
-        #     with col_loop_3:
-        #         bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_RANDOM])
-        #         st.checkbox(f"{EMOJI_RANDOM}", value=bool_value, help="Random", on_change=fn_mpd_loop, args=[MPD_COMMAND_RANDOM, S_UI_LOOP_RANDOM], key=S_UI_LOOP_RANDOM)
-        # else:
-        #     with col_loop_3:
-        #         st.write(f"{EMOJI_NOT_EXIST}{EMOJI_RANDOM}")
-
-        # if MPD_COMMAND_CONSUME in result_mpd_status:
-        #     with col_loop_4:
-        #         bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_CONSUME])
-        #         st.checkbox(f"{EMOJI_CONSUME}", value=bool_value, help="Consume==Remove song from playlist after play", on_change=fn_mpd_loop, args=[MPD_COMMAND_CONSUME, S_UI_LOOP_CONSUME], key=S_UI_LOOP_CONSUME)
-        # else:
-        #     with col_loop_4:
-        #         st.write(f"{EMOJI_NOT_EXIST}{EMOJI_CONSUME}")
 
         # Loop Muliti Select
-        loop_options_base = []
-        loop_options_selected = []
-
+        if not S_UI_LOOP_BASE in st.session_state:
+            st.session_state[S_UI_LOOP_BASE] = [MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME]
+        
+        # Init
+        st.session_state[S_UI_LOOP_SELECTED] = []
+        
+        # Check Server value
         if MPD_COMMAND_REPEAT in result_mpd_status:
-            loop_options_base.append(MPD_COMMAND_REPEAT)
             bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_REPEAT])
             if bool_value:
-                loop_options_selected.append(MPD_COMMAND_REPEAT)
+                st.session_state[S_UI_LOOP_SELECTED].append(MPD_COMMAND_REPEAT)
 
         if MPD_COMMAND_SINGLE in result_mpd_status:
-            loop_options_base.append(MPD_COMMAND_SINGLE)
             bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_SINGLE])
             if bool_value:
-                loop_options_selected.append(MPD_COMMAND_SINGLE)
+                st.session_state[S_UI_LOOP_SELECTED].append(MPD_COMMAND_SINGLE)
         
         if MPD_COMMAND_RANDOM in result_mpd_status:
-            loop_options_base.append(MPD_COMMAND_RANDOM)
             bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_RANDOM])
             if bool_value:
-                loop_options_selected.append(MPD_COMMAND_RANDOM)
+                st.session_state[S_UI_LOOP_SELECTED].append(MPD_COMMAND_RANDOM)
 
         if MPD_COMMAND_CONSUME in result_mpd_status:
-            loop_options_base.append(MPD_COMMAND_CONSUME)
             bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_CONSUME])
             if bool_value:
-                loop_options_selected.append(MPD_COMMAND_CONSUME)
+                st.session_state[S_UI_LOOP_SELECTED].append(MPD_COMMAND_CONSUME)
+        
 
-        st.multiselect("Loop Options", loop_options_base, loop_options_selected, on_change=fn_select_command_loop, key=S_UI_SELECT_COMMAND_LOOP)
+        # Create Widget Every Time
+        st.session_state[S_UI_SELECT_COMMAND_LOOP] = uuid.uuid4()
+        st.multiselect("Loop Options", st.session_state[S_UI_LOOP_BASE], st.session_state[S_UI_LOOP_SELECTED], on_change=fn_select_command_loop, key=st.session_state[S_UI_SELECT_COMMAND_LOOP])
+
+        
 
     #-------------------------
     # Quee

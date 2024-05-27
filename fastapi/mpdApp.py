@@ -5,7 +5,7 @@ config = Settings()
 from const import RESULT_FAIL
 from const import MPD_ITEM_PLAYLIST_QUEE, MPD_ITEM_DISPLAY_NAME, MPD_ITEM_CURRENT_SONG
 from const import MPD_COMMAND_PLAY, MPD_COMMAND_PAUSE, MPD_COMMAND_RESUME, MPD_COMMAND_STOP, MPD_COMMAND_STATUS, MPD_COMMAND_PREVIOUS, MPD_COMMAND_NEXT, MPD_COMMAND_VOLUME
-from const import MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME
+from const import MPD_COMMAND_LOOP, MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME
 from const import MPD_COMMAND_QUEE_CLEAR, MPD_COMMAND_QUEE_DELETE, MPD_COMMAND_QUEE_ADD
 
 import inspect
@@ -87,19 +87,16 @@ def set_mpd_command(mpdItem:MpdItem):
         elif mpdItem.command == MPD_COMMAND_RESUME:
             client_connect.pause(0)
         elif mpdItem.command == MPD_COMMAND_PREVIOUS:
-            client_connect.previos()
+            client_connect.previous()
         elif mpdItem.command == MPD_COMMAND_NEXT:
             client_connect.next()   
         elif mpdItem.command == MPD_COMMAND_VOLUME:
             client_connect.setvol(mpdItem.command_value_int)
-        elif mpdItem.command == MPD_COMMAND_REPEAT:
-            client_connect.repeat(mpdItem.command_value_int)
-        elif mpdItem.command == MPD_COMMAND_SINGLE:
-            client_connect.single(mpdItem.command_value_int)
-        elif mpdItem.command == MPD_COMMAND_RANDOM:
-            client_connect.random(mpdItem.command_value_int)
-        elif mpdItem.command == MPD_COMMAND_CONSUME:
-            client_connect.consume(mpdItem.command_value_int)
+        elif mpdItem.command == MPD_COMMAND_LOOP:
+            client_connect.repeat(mpdItem.loop_repeat)
+            client_connect.single(mpdItem.loop_single)
+            client_connect.random(mpdItem.loop_random)
+            client_connect.consume(mpdItem.loop_consume)
         elif mpdItem.command == MPD_COMMAND_QUEE_CLEAR:
             client_connect.clear()
         elif mpdItem.command == MPD_COMMAND_QUEE_DELETE:
