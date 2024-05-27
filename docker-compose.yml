@@ -8,7 +8,6 @@ services:
     networks:
       - deploy_network
     volumes:
-      - ~/music/folder_source:/app/source:z
       - ~/music/folder_target:/app/target:z
     container_name: mpdclient_fastapi
     restart: always

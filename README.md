@@ -21,7 +21,7 @@ git clone https://github.com/halfenif/toy_mpdclient_streamlit.git
 ```
 
 ### Set MP3 Folder
-Default folder path **'/mnt/folder_target'**   
+Default folder path **'~/music/folder_target'**   
 change docker-compose.yml file
 
 ## Change Config (Options)
