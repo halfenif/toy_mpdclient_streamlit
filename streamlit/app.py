@@ -12,9 +12,7 @@ from session import S_CURRENT_TARGET_FOLDER_DISPLAY # rerun() 했을 때 화면 
 from session import S_UI_VOLUME, S_UI_LOOP_REPEAT, S_UI_LOOP_SINGLE, S_UI_LOOP_RANDOM, S_UI_LOOP_CONSUME, S_UI_QUEE_CLEAR
 from session import S_UI_SELECT_COMMAND_PLAY, S_UI_SELECT_COMMAND_LOOP, S_UI_SELECT_COMMAND_QUEE, S_UI_SELECT_COMMAND_TARGET
 
-from session import S_UI_LOOP_BASE, S_UI_LOOP_SELECTED
-
-from session import S_UI_COMMON_ITEM_SELECT_INIT, S_UI_QUEE_ITEM_COMMAND_CLEAR, S_UI_QUEE_ITEM_COMMAND_REMOVE, S_UI_QUEE_ITEM_COMMAND_UP, S_UI_QUEE_ITEM_COMMAND_DOWN
+from session import S_UI_COMMON_ITEM_SELECT_INIT, S_UI_QUEE_ITEM_COMMAND_CLEAR, S_UI_QUEE_ITEM_COMMAND_REMOVE, S_UI_QUEE_ITEM_COMMAND_UP, S_UI_QUEE_ITEM_COMMAND_DOWN, S_UI_QUEE_ITEM_COMMAND_PLAY
 
 from session import S_CURRENT_SELECT_ITEM_QUEE
 
@@ -22,12 +20,9 @@ from const import MPD_ITEM_STATE, MPD_ITEM_PLAYLIST_QUEE, MPD_ITEM_DISPLAY_NAME,
 
 from const import MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PAUSE, MPD_COMMAND_RESUME, MPD_COMMAND_STATUS, MPD_COMMAND_PREVIOUS, MPD_COMMAND_NEXT, MPD_COMMAND_VOLUME
 from const import MPD_COMMAND_LOOP, MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME
-from const import MPD_COMMAND_QUEE_CLEAR, MPD_COMMAND_QUEE_DELETE, MPD_COMMAND_QUEE_ADD
+from const import MPD_COMMAND_QUEE_CLEAR, MPD_COMMAND_QUEE_DELETE, MPD_COMMAND_QUEE_ADD, MPD_COMMAND_QUEE_DOWN, MPD_COMMAND_QUEE_UP, MPD_COMMAND_QUEE_PLAY
 
-from const import EMOJI_NOT_EXIST, EMOJI_QUEE_CLEAR, EMOJI_QUEE_DELETE, EMOJI_REFRESH
-from const import EMOJI_PLAY, EMOJI_STOP, EMOJI_PAUSE, EMOJI_RESUME, EMOJI_PREVIOUS, EMOJI_NEXT
-from const import EMOJI_REPEAT, EMOJI_SINGLE, EMOJI_RANDOM, EMOJI_CONSUME
-from const import EMOJI_REMOVE, EMOJI_ADD, EMOJI_UP, EMOJI_DOWN
+from const import EMOJI_PLAY, EMOJI_QUEE_DELETE, EMOJI_REFRESH, EMOJI_UP, EMOJI_DOWN
 
 
 import streamlit as st
@@ -194,22 +189,6 @@ def fn_select_command_loop():
     fn_mpd_command(mpdItem)
 
 #----------------------------------------
-def fn_mpd_quee(command:str, item:any):
-    # Init MPD Item
-    mpdItem = MpdItem()
-    mpdItem.command = command
-
-    if command == MPD_COMMAND_QUEE_DELETE:
-        if not "id" in item:
-            st.error(f'{command}: item no attribute playlist quee song "id"')
-            st.stop()
-        mpdItem.song_id = int(item["id"])
-    elif command == MPD_COMMAND_QUEE_ADD:
-        mpdItem.song_path_encode = item["pathEncode"]
-
-    fn_mpd_command(mpdItem)
-
-
 def fn_select_command_play():
     if not st.session_state[S_UI_SELECT_COMMAND_PLAY] == S_UI_COMMON_ITEM_SELECT_INIT:
         # Init MPD Item
@@ -222,7 +201,7 @@ def fn_select_command_play():
     
 
 
-
+# Quee Select Changed
 def fn_select_command_quee():
     if st.session_state[S_UI_SELECT_COMMAND_QUEE] == S_UI_QUEE_ITEM_COMMAND_CLEAR:
         # Init MPD Item
@@ -232,6 +211,9 @@ def fn_select_command_quee():
 
     elif st.session_state[S_UI_SELECT_COMMAND_QUEE] == S_UI_QUEE_ITEM_COMMAND_REMOVE:
         st.session_state[S_CURRENT_SELECT_ITEM_QUEE] = S_UI_QUEE_ITEM_COMMAND_REMOVE
+    elif st.session_state[S_UI_SELECT_COMMAND_QUEE] == S_UI_QUEE_ITEM_COMMAND_PLAY:
+        st.session_state[S_CURRENT_SELECT_ITEM_QUEE] = S_UI_QUEE_ITEM_COMMAND_PLAY
+
     elif st.session_state[S_UI_SELECT_COMMAND_QUEE] == S_UI_QUEE_ITEM_COMMAND_UP:
         st.session_state[S_CURRENT_SELECT_ITEM_QUEE] = S_UI_QUEE_ITEM_COMMAND_UP
     elif st.session_state[S_UI_SELECT_COMMAND_QUEE] == S_UI_QUEE_ITEM_COMMAND_DOWN:
@@ -239,8 +221,21 @@ def fn_select_command_quee():
     else:
         st.error(f"Not defined quee command: {st.session_state[S_CURRENT_SELECT_ITEM_QUEE]}")
         
-        
+# Quee Button Clicked
+def fn_mpd_quee(command:str, item:any):
+    # Init MPD Item
+    mpdItem = MpdItem()
+    mpdItem.command = command
 
+    if command == MPD_COMMAND_QUEE_DELETE or command == MPD_COMMAND_QUEE_PLAY or command == MPD_COMMAND_QUEE_UP or command == MPD_COMMAND_QUEE_DOWN:
+        if not "id" in item:
+            st.error(f'{command}: item no attribute playlist quee song "id"')
+            st.stop()
+        mpdItem.song_id = int(item["id"])
+    elif command == MPD_COMMAND_QUEE_ADD:
+        mpdItem.song_path_encode = item["pathEncode"]
+
+    fn_mpd_command(mpdItem)
 
 def fn_select_command_target():
     st.write(st.session_state[S_UI_SELECT_COMMAND_TARGET])
@@ -327,61 +322,65 @@ with c_status:
 
 
         # Loop Muliti Select
-        if not S_UI_LOOP_BASE in st.session_state:
-            st.session_state[S_UI_LOOP_BASE] = [MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME]
+        loop_base = [MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME]
         
         # Init
-        st.session_state[S_UI_LOOP_SELECTED] = []
+        loop_selected = []
         
         # Check Server value
         if MPD_COMMAND_REPEAT in result_mpd_status:
             bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_REPEAT])
             if bool_value:
-                st.session_state[S_UI_LOOP_SELECTED].append(MPD_COMMAND_REPEAT)
+                loop_selected.append(MPD_COMMAND_REPEAT)
 
         if MPD_COMMAND_SINGLE in result_mpd_status:
             bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_SINGLE])
             if bool_value:
-                st.session_state[S_UI_LOOP_SELECTED].append(MPD_COMMAND_SINGLE)
+                loop_selected.append(MPD_COMMAND_SINGLE)
         
         if MPD_COMMAND_RANDOM in result_mpd_status:
             bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_RANDOM])
             if bool_value:
-                st.session_state[S_UI_LOOP_SELECTED].append(MPD_COMMAND_RANDOM)
+                loop_selected.append(MPD_COMMAND_RANDOM)
 
         if MPD_COMMAND_CONSUME in result_mpd_status:
             bool_value = fn_check_int_bool(result_mpd_status[MPD_COMMAND_CONSUME])
             if bool_value:
-                st.session_state[S_UI_LOOP_SELECTED].append(MPD_COMMAND_CONSUME)
+                loop_selected.append(MPD_COMMAND_CONSUME)
         
 
         # Create Widget Every Time
         st.session_state[S_UI_SELECT_COMMAND_LOOP] = uuid.uuid4()
-        st.multiselect("Loop Options", st.session_state[S_UI_LOOP_BASE], st.session_state[S_UI_LOOP_SELECTED], on_change=fn_select_command_loop, key=st.session_state[S_UI_SELECT_COMMAND_LOOP])
+        st.multiselect("Loop Options", loop_base, loop_selected, on_change=fn_select_command_loop, key=st.session_state[S_UI_SELECT_COMMAND_LOOP])
 
         
 
     #-------------------------
     # Quee
     if MPD_ITEM_PLAYLIST_QUEE in result_mpd_status:
-        # st.button(f"{EMOJI_QUEE_CLEAR} Clear Quee", on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_CLEAR, S_UI_QUEE_CLEAR], key=S_UI_QUEE_CLEAR)
 
-        quee_command_options = [S_UI_QUEE_ITEM_COMMAND_REMOVE, S_UI_QUEE_ITEM_COMMAND_UP, S_UI_QUEE_ITEM_COMMAND_DOWN, S_UI_QUEE_ITEM_COMMAND_CLEAR]
-        st.selectbox("Quee Command Type", quee_command_options, on_change=fn_select_command_quee, key=S_UI_SELECT_COMMAND_QUEE)
+        quee_command_options = [S_UI_QUEE_ITEM_COMMAND_REMOVE, S_UI_QUEE_ITEM_COMMAND_PLAY, S_UI_QUEE_ITEM_COMMAND_UP, S_UI_QUEE_ITEM_COMMAND_DOWN, S_UI_QUEE_ITEM_COMMAND_CLEAR]
+        st.selectbox("Quee Button Type & Clear", quee_command_options, on_change=fn_select_command_quee, key=S_UI_SELECT_COMMAND_QUEE)
 
         
         if st.session_state[S_CURRENT_SELECT_ITEM_QUEE] == S_UI_QUEE_ITEM_COMMAND_REMOVE:
             emoji_quee = EMOJI_QUEE_DELETE
+            command_quee = MPD_COMMAND_QUEE_DELETE
+        elif st.session_state[S_CURRENT_SELECT_ITEM_QUEE] == S_UI_QUEE_ITEM_COMMAND_PLAY:
+            emoji_quee = EMOJI_PLAY
+            command_quee = MPD_COMMAND_QUEE_PLAY
         elif st.session_state[S_CURRENT_SELECT_ITEM_QUEE] == S_UI_QUEE_ITEM_COMMAND_UP:
             emoji_quee = EMOJI_UP
+            command_quee = MPD_COMMAND_QUEE_UP
         elif st.session_state[S_CURRENT_SELECT_ITEM_QUEE] == S_UI_QUEE_ITEM_COMMAND_DOWN:
             emoji_quee = EMOJI_DOWN
+            command_quee = MPD_COMMAND_QUEE_DOWN
         else:
             emoji_quee = EMOJI_QUEE_DELETE
 
             
         for item in result_mpd_status[MPD_ITEM_PLAYLIST_QUEE]:
-            st.button(f'{emoji_quee} {item[MPD_ITEM_DISPLAY_NAME]}', on_click=fn_mpd_quee, args=[MPD_COMMAND_QUEE_DELETE, item], key=uuid.uuid4())
+            st.button(f'{emoji_quee} {item[MPD_ITEM_DISPLAY_NAME]}', on_click=fn_mpd_quee, args=[command_quee, item], key=uuid.uuid4())
     else:
         st.warning("Playlist Quee is empty")
                 

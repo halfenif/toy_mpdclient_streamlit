@@ -41,4 +41,7 @@ MPD_COMMAND_CONSUME="consume"
 
 MPD_COMMAND_QUEE_CLEAR="quee-clear"
 MPD_COMMAND_QUEE_DELETE="quee-delete-item"
+MPD_COMMAND_QUEE_DOWN="quee-down-item"
+MPD_COMMAND_QUEE_UP="quee-up-item"
 MPD_COMMAND_QUEE_ADD="clear-add-item"
+MPD_COMMAND_QUEE_PLAY="clear-play-item"

@@ -34,7 +34,10 @@ MPD_COMMAND_CONSUME="consume"
 
 MPD_COMMAND_QUEE_CLEAR="quee-clear"
 MPD_COMMAND_QUEE_DELETE="quee-delete-item"
+MPD_COMMAND_QUEE_DOWN="quee-down-item"
+MPD_COMMAND_QUEE_UP="quee-up-item"
 MPD_COMMAND_QUEE_ADD="clear-add-item"
+MPD_COMMAND_QUEE_PLAY="clear-play-item"
 
 EMOJI_PLAY=":arrow_forward:"
 EMOJI_STOP=":black_square_for_stop:"
@@ -43,10 +46,6 @@ EMOJI_RESUME=":black_right_pointing_triangle_with_double_vertical_bar:"
 EMOJI_NEXT=":black_right_pointing_double_triangle_with_vertical_bar:"
 EMOJI_PREVIOUS=":black_left_pointing_double_triangle_with_vertical_bar:"
 
-EMOJI_REPEAT=":repeat:"
-EMOJI_SINGLE=":repeat_one:" #
-EMOJI_RANDOM=":twisted_rightwards_arrows:"
-EMOJI_CONSUME=":put_litter_in_its_place:"
 
 EMOJI_NOT_EXIST=":x:"
 EMOJI_QUEE_CLEAR=":boom:"

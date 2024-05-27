@@ -6,7 +6,7 @@ from const import RESULT_FAIL
 from const import MPD_ITEM_PLAYLIST_QUEE, MPD_ITEM_DISPLAY_NAME, MPD_ITEM_CURRENT_SONG
 from const import MPD_COMMAND_PLAY, MPD_COMMAND_PAUSE, MPD_COMMAND_RESUME, MPD_COMMAND_STOP, MPD_COMMAND_STATUS, MPD_COMMAND_PREVIOUS, MPD_COMMAND_NEXT, MPD_COMMAND_VOLUME
 from const import MPD_COMMAND_LOOP, MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME
-from const import MPD_COMMAND_QUEE_CLEAR, MPD_COMMAND_QUEE_DELETE, MPD_COMMAND_QUEE_ADD
+from const import MPD_COMMAND_QUEE_CLEAR, MPD_COMMAND_QUEE_DELETE, MPD_COMMAND_QUEE_ADD, MPD_COMMAND_QUEE_DOWN, MPD_COMMAND_QUEE_UP, MPD_COMMAND_QUEE_PLAY
 
 import inspect
 from RequestResult import RequestResult
@@ -101,6 +101,15 @@ def set_mpd_command(mpdItem:MpdItem):
             client_connect.clear()
         elif mpdItem.command == MPD_COMMAND_QUEE_DELETE:
             client_connect.deleteid(mpdItem.song_id)
+        elif mpdItem.command == MPD_COMMAND_QUEE_PLAY:
+            client_connect.playid(mpdItem.song_id)
+
+        elif mpdItem.command == MPD_COMMAND_QUEE_UP or mpdItem.command == MPD_COMMAND_QUEE_DOWN:
+            mpd_quee_info = client_connect.playlistinfo()
+            id_before = get_swap_id(mpd_quee_info, mpdItem.song_id, mpdItem.command)
+            if id_before:
+                client_connect.swapid(mpdItem.song_id, id_before)
+
         elif mpdItem.command == MPD_COMMAND_QUEE_ADD:
             # 경로에 대한 이해
             # 본 프로젝트의 file & folder navigation은 filemover project에서 가지고 온것이다. (https://github.com/halfenif/toy_filemover_streamlit)
@@ -129,3 +138,24 @@ def set_mpd_command(mpdItem:MpdItem):
     
     client_connect.disconnect()
     return mpdItem
+
+
+def get_swap_id(mpd_quee_info, song_id, command):
+    list = []
+    for item in mpd_quee_info:
+        list.append(int(item["id"]))
+
+    if command == MPD_COMMAND_QUEE_DOWN:
+        list.reverse()
+
+    if config.IS_DEBUG:
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] list:', list)
+
+    id_before = 0
+    for item in list:
+        if id_before == 0 and item == song_id:
+            return None
+        elif id_before > 0 and item == song_id:
+            return id_before
+        else:
+            id_before = item
