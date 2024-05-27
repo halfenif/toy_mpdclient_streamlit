@@ -1,5 +1,3 @@
-# 아직 개발중입니다.
-
 # MPD Client for Home
 
 ![Demo](doc/Screen01.png)
