@@ -5,6 +5,10 @@
 ## Demo
 [https://mpdclient.enif.page](https://mpdclient.enif.page)
 
+MPD를 2개 설정 했습니다만.
+1. server다 보니 mixer가 없어서 volume은 조절이 안됩니다.
+2. flac 파일은 재생이 안됩니다.
+
 ## Feature
 - Simple is BEST concept
 - Multi MPD support
