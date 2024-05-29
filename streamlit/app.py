@@ -120,8 +120,6 @@ def fn_file_select(fileitem):
     elif st.session_state[S_CURRENT_SELECT_ITEM_TARGET] == S_UI_TARGET_ITEM_COMMAND_DOWNLOAD:
         status_file, result_file =  download_file_by_path(fileitem["rootType"], fileitem["pathEncode"])
 
-        st.write(status_file)
-
         if status_file == 200:
             st.download_button(f'Download File: {fileitem["fileName"]}', result_file, fileitem["fileName"])
 
@@ -432,7 +430,8 @@ with c_target:
     c_target.divider()    
 
     # Target
-    target_command_options = [S_UI_TARGET_ITEM_COMMAND_ADD_QUEE, S_UI_TARGET_ITEM_COMMAND_VIEW_TAG, S_UI_TARGET_ITEM_COMMAND_DOWNLOAD]
+    #target_command_options = [S_UI_TARGET_ITEM_COMMAND_ADD_QUEE, S_UI_TARGET_ITEM_COMMAND_VIEW_TAG, S_UI_TARGET_ITEM_COMMAND_DOWNLOAD]
+    target_command_options = [S_UI_TARGET_ITEM_COMMAND_ADD_QUEE, S_UI_TARGET_ITEM_COMMAND_DOWNLOAD]
     st.selectbox("Target Button Type", target_command_options, on_change=fn_select_command_target, key=S_UI_SELECT_COMMAND_TARGET)
 
 
