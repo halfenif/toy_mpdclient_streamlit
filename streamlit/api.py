@@ -89,7 +89,7 @@ def get_mpd_status(mpdItem: any):
 def set_mpd_command(mpdItem: any):
     try:
         response = requests.get(backend + inspect.stack()[0][3], params=mpdItem)
-        return response
+        return result_check(response)
     except requests.exceptions.RequestException as e:
         request_exception(e, inspect.stack()[0][3])
 

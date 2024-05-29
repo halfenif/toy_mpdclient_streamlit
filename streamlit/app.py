@@ -186,7 +186,9 @@ def fn_check_bool_int(bool_value:bool):
 
 def fn_mpd_command(mpdItem:MpdItem):
     mpdItem.server_name = str(st.session_state[S_CURRENT_SERVER_NAME])
-    set_mpd_command(mpdItem)
+    status_command, result_command = set_mpd_command(mpdItem)
+    # if not status_command == 200:
+    #     st.stop()
 
 def fn_mpd_volume():
     # Init MPD Item
