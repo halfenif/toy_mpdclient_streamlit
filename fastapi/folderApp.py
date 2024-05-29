@@ -13,7 +13,8 @@ import const
 
 import fileUtils
 from FileItem import FileItem
-
+from RequestResult import RequestResult
+from fastapi.responses import FileResponse
 
 
 # File Item for return
@@ -172,3 +173,47 @@ def list_folder_and_file_by_path(rootType: str, pathEncode: str):
     return fileItems
 
 
+
+def download_file_by_path(rootType: str, pathEncode: str):
+    # Debug
+    if config.IS_DEBUG:
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] rootType:', rootType)
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] pathDecode:', pathEncode)
+
+    stateCheck, pathFull, isRoot = fileUtils.getFullPath(rootType, pathEncode)
+    if stateCheck:
+        return stateCheck
+
+    if not os.path.exists(pathFull):
+        requestResult = RequestResult()
+        requestResult.result = const.RESULT_FAIL
+        requestResult.msg = f"Not Exist File:{pathFull}"
+        requestResult.method = f'{inspect.stack()[0][3]}'
+        return requestResult
+    
+    fileItem = FileItem()
+    fileItem.file_name = os.path.basename(pathFull)
+    fileItem.file_name_display = fileUtils.getDisplayFileName(fileItem.file_name)
+    fileItem.file_base_name, fileItem.file_ext_name = os.path.splitext(fileItem.file_name)    
+
+
+    if not fileItem.file_ext_name.lower() in const.SUPPORT_EXT:
+        requestResult = RequestResult()
+        requestResult.result = const.RESULT_FAIL
+        requestResult.msg = f"Not Support File Ext:{fileItem.file_ext_name.lower()}"
+        requestResult.method = f'{inspect.stack()[0][3]}'
+        return requestResult
+    elif fileItem.file_ext_name.lower() == ".mp3":
+        media_type = "audio/mpeg"
+    elif fileItem.file_ext_name.lower() == ".ogg":
+        media_type = "audio/ogg"
+    elif fileItem.file_ext_name.lower() == ".flac":
+        media_type = "audio/flac"
+
+    result = FileResponse(path=pathFull, filename=fileItem.file_name, media_type=media_type)    
+
+    if config.IS_DEBUG:
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] type of result:', type(result))
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] result:', result)
+
+    return result

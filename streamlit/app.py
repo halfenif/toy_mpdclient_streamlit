@@ -13,8 +13,9 @@ from session import S_UI_VOLUME, S_UI_LOOP_REPEAT, S_UI_LOOP_SINGLE, S_UI_LOOP_R
 from session import S_UI_SELECT_COMMAND_PLAY, S_UI_SELECT_COMMAND_LOOP, S_UI_SELECT_COMMAND_QUEE, S_UI_SELECT_COMMAND_TARGET
 
 from session import S_UI_COMMON_ITEM_SELECT_INIT, S_UI_QUEE_ITEM_COMMAND_CLEAR, S_UI_QUEE_ITEM_COMMAND_REMOVE, S_UI_QUEE_ITEM_COMMAND_UP, S_UI_QUEE_ITEM_COMMAND_DOWN, S_UI_QUEE_ITEM_COMMAND_PLAY
+from session import S_UI_TARGET_ITEM_COMMAND_ADD_QUEE, S_UI_TARGET_ITEM_COMMAND_VIEW_TAG, S_UI_TARGET_ITEM_COMMAND_DOWNLOAD
 
-from session import S_CURRENT_SELECT_ITEM_QUEE
+from session import S_CURRENT_SELECT_ITEM_QUEE, S_CURRENT_SELECT_ITEM_TARGET
 
 from const import MPD_ITEM_STATE, MPD_ITEM_PLAYLIST_QUEE, MPD_ITEM_DISPLAY_NAME, MPD_ITEM_CURRENT_SONG
 
@@ -22,11 +23,12 @@ from const import MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PAUSE, MPD_COM
 from const import MPD_COMMAND_LOOP, MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_COMMAND_RANDOM, MPD_COMMAND_CONSUME
 from const import MPD_COMMAND_QUEE_CLEAR, MPD_COMMAND_QUEE_DELETE, MPD_COMMAND_QUEE_ADD, MPD_COMMAND_QUEE_DOWN, MPD_COMMAND_QUEE_UP, MPD_COMMAND_QUEE_PLAY
 
+
 from const import EMOJI_PLAY, EMOJI_QUEE_DELETE, EMOJI_REFRESH, EMOJI_UP, EMOJI_DOWN
 
 
 import streamlit as st
-from api import list_folder_and_file_by_path, get_mpd_server_list ,get_mpd_status, set_mpd_command
+from api import list_folder_and_file_by_path, get_mpd_server_list ,get_mpd_status, set_mpd_command, download_file_by_path
 import uuid
 
 from MpdItem import MpdItem
@@ -55,6 +57,9 @@ if S_CURRENT_TARGET_FOLDER not in st.session_state:
 
 if S_CURRENT_SELECT_ITEM_QUEE not in st.session_state:
     st.session_state[S_CURRENT_SELECT_ITEM_QUEE] = S_UI_QUEE_ITEM_COMMAND_REMOVE
+
+if S_CURRENT_SELECT_ITEM_TARGET not in st.session_state:
+    st.session_state[S_CURRENT_SELECT_ITEM_TARGET] = S_UI_TARGET_ITEM_COMMAND_ADD_QUEE
 
 
 
@@ -110,7 +115,22 @@ def fn_display_page_header():
         st.link_button(config.UI_OPTION_LINK_TITLE , config.UI_OPTION_LINK_URL)
 
 def fn_file_select(fileitem):
-    fn_mpd_quee(MPD_COMMAND_QUEE_ADD, fileitem)
+    if st.session_state[S_CURRENT_SELECT_ITEM_TARGET] == S_UI_TARGET_ITEM_COMMAND_ADD_QUEE:
+        fn_mpd_quee(MPD_COMMAND_QUEE_ADD, fileitem)
+    elif st.session_state[S_CURRENT_SELECT_ITEM_TARGET] == S_UI_TARGET_ITEM_COMMAND_DOWNLOAD:
+        status_file, result_file =  download_file_by_path(fileitem["rootType"], fileitem["pathEncode"])
+
+        st.write(status_file)
+
+        if status_file == 200:
+            st.download_button(f'Download File: {fileitem["fileName"]}', result_file, fileitem["fileName"])
+
+    elif st.session_state[S_CURRENT_SELECT_ITEM_TARGET] == S_UI_TARGET_ITEM_COMMAND_VIEW_TAG:
+        # Sidebar Tag Info
+        st.write(st.session_state[S_CURRENT_SELECT_ITEM_TARGET])
+    else:
+        st.error(f"정의되지않은 Target Command 유형입니다. {st.session_state[S_CURRENT_SELECT_ITEM_TARGET]}")
+    
     
 #---------------------------------------------------------------------
 def fn_folder_select(fileitem):
@@ -125,13 +145,23 @@ def fn_make_button_lable(fileitem):
     buttonEmoji = ""
     if fileitem["pathType"] == PATH_TYPE_FOLDER:
         buttonEmoji = ":file_folder:"
-    if fileitem["pathType"] == PATH_TYPE_FILE:
-        buttonEmoji = ":musical_note:"
+    elif fileitem["pathType"] == PATH_TYPE_FILE:
+
+        if st.session_state[S_CURRENT_SELECT_ITEM_TARGET] == S_UI_TARGET_ITEM_COMMAND_ADD_QUEE:
+            buttonEmoji = ":musical_note:"
+        elif st.session_state[S_CURRENT_SELECT_ITEM_TARGET] == S_UI_TARGET_ITEM_COMMAND_VIEW_TAG:
+            buttonEmoji = ":id:"
+        elif st.session_state[S_CURRENT_SELECT_ITEM_TARGET] == S_UI_TARGET_ITEM_COMMAND_DOWNLOAD:
+            buttonEmoji = ":floppy_disk:"
+        else:
+            buttonEmoji = EMOJI_QUEE_DELETE    
+
     if fileitem["isParent"]:
         buttonEmoji = ":back:"
 
     display_file_name = buttonEmoji + " " + fileitem["fileNameDisplay"]
-        
+
+       
     return display_file_name
 
 #---------------------------------------------------------------------
@@ -240,7 +270,7 @@ def fn_mpd_quee(command:str, item:any):
     fn_mpd_command(mpdItem)
 
 def fn_select_command_target():
-    st.write(st.session_state[S_UI_SELECT_COMMAND_TARGET])
+    st.session_state[S_CURRENT_SELECT_ITEM_TARGET] = st.session_state[S_UI_SELECT_COMMAND_TARGET]
 
 #---------------------------------------------------------------------
 
@@ -399,6 +429,13 @@ with c_status:
 with c_target:
     c_target.divider()    
 
+    # Target
+    target_command_options = [S_UI_TARGET_ITEM_COMMAND_ADD_QUEE, S_UI_TARGET_ITEM_COMMAND_VIEW_TAG, S_UI_TARGET_ITEM_COMMAND_DOWNLOAD]
+    st.selectbox("Target Button Type", target_command_options, on_change=fn_select_command_target, key=S_UI_SELECT_COMMAND_TARGET)
+
+
+
+    # Display File
     status_code, result = list_folder_and_file_by_path(PATH_LOCATION_TARGET, str(st.session_state[S_CURRENT_TARGET_FOLDER]))
 
     if status_code == 200:

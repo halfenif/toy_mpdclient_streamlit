@@ -48,3 +48,11 @@ def list_folder_and_file_by_path(rootType: str, pathEncode: str):
         print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] rootType:', rootType)
         print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] pathDecode:', pathEncode)    
     return folderApp.list_folder_and_file_by_path(rootType, pathEncode)
+
+@app.get("/download_file_by_path")
+def download_file_by_path(rootType: str, pathEncode: str):
+    # Debug
+    if config.IS_DEBUG:
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] rootType:', rootType)
+        print(f'[{inspect.getfile(inspect.currentframe())}][{inspect.stack()[0][3]}] pathDecode:', pathEncode)    
+    return folderApp.download_file_by_path(rootType, pathEncode)

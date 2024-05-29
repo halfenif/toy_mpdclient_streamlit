@@ -35,7 +35,31 @@ def result_check(response: any):
         message = "호출오류: Http Status Code is " + str(response.status_code)
         st.error(message, icon="🔥")        
         return response.status_code, ""
-    
+
+def result_check_binary(response: any):
+    if response.status_code == 200:
+
+        #Result Check
+        try:
+            result_state_str = response.json()["Result"]
+            if(result_state_str == const.RESULT_FAIL):
+                message = response.json()["Message"] + ' @ ' + response.json()["Method"]
+                st.error(message, icon="🚨")
+                return "", 500
+            
+            # 정상응답인경우
+            return response.status_code, response.content
+        except:
+            # 정상응답인경우
+            return response.status_code, response.content
+
+    else:
+        # Server에서 오류응답인경우
+        message = "호출오류: Http Status Code is " + str(response.status_code)
+        st.error(message, icon="🔥")        
+        return response.status_code, ""
+
+
 def request_exception(e: any, client_method: str):
     message = "호출오류:" + str(e) + ' @ ' + client_method
     st.error(message, icon="🔥")
@@ -65,7 +89,7 @@ def get_mpd_status(mpdItem: any):
 def set_mpd_command(mpdItem: any):
     try:
         response = requests.get(backend + inspect.stack()[0][3], params=mpdItem)
-        return result_check(response)
+        return response
     except requests.exceptions.RequestException as e:
         request_exception(e, inspect.stack()[0][3])
 
@@ -81,3 +105,9 @@ def list_folder_and_file_by_path(rootType: str, pathEncode: str):
         request_exception(e, inspect.stack()[0][3])
 
     
+def download_file_by_path(rootType: str, pathEncode: str):
+    try:
+        response = requests.get(backend + inspect.stack()[0][3], params={'rootType':rootType, 'pathEncode':pathEncode})
+        return result_check_binary(response)
+    except requests.exceptions.RequestException as e:
+        request_exception(e, inspect.stack()[0][3])
