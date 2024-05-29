@@ -22,15 +22,24 @@ MPD를 2개 설정 했습니다만.
 git clone https://github.com/halfenif/toy_mpdclient_streamlit.git
 ```
 
-### Set MP3 Folder
-Default folder path **'~/music/folder_target'**   
-change docker-compose.yml file
-
-## Change Config (Options)
+## Change Config
 ```bash
+cp ./.env.sample ./.env
 cp ./fastapi/.env.sample ./fastapi/.env
 cp ./streamlit/.env.sample ./streamlit/.env
 ```
+
+### Edit .env
+
+**./.env**  
+- FOLDER_TARGET="" # MPD music folder
+
+1. Don't use symbolic link
+2. Docker run user is root
+3. Podman run user is login user
+4. Be carefull folder and file permission
+
+
 **fastapi/.env**
 - ENV_TYPE = ".env.sample" > ".env" Display Information
 - IS_DEBUG = bool

@@ -106,6 +106,8 @@ def fn_display_page_header():
     if config.UI_OPTION_DESC:
         st.write(config.UI_OPTION_DESC)
 
+    if config.UI_OPTION_LINK_TITLE and config.UI_OPTION_LINK_URL:
+        st.link_button(config.UI_OPTION_LINK_TITLE , config.UI_OPTION_LINK_URL)
 
 def fn_file_select(fileitem):
     fn_mpd_quee(MPD_COMMAND_QUEE_ADD, fileitem)
