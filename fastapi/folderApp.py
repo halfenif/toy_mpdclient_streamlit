@@ -149,7 +149,7 @@ def list_folder_and_file_by_path(rootType: str, pathEncode: str):
         if isdir(target_path):
             fileItems_folders = addFolder(fileItems_folders, rootType, target_path)
         else:
-            if target_path.lower().endswith(".mp3") or target_path.lower().endswith(".flac") or target_path.lower().endswith(".ogg"):
+            if target_path.lower().endswith(".mp3") or target_path.lower().endswith(".flac") or target_path.lower().endswith(".ogg") or target_path.lower().endswith(".wma"):
                 fileItems_files = addFile(fileItems_files, rootType, target_path)
 
     # Sort List
@@ -209,6 +209,8 @@ def download_file_by_path(rootType: str, pathEncode: str):
         media_type = "audio/ogg"
     elif fileItem.file_ext_name.lower() == ".flac":
         media_type = "audio/flac"
+    elif fileItem.file_ext_name.lower() == ".wma":
+        media_type = "audio/wma"
 
     result = FileResponse(path=pathFull, filename=fileItem.file_name, media_type=media_type)    
 

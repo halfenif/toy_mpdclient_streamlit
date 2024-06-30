@@ -19,7 +19,7 @@ FOLDER_CONFIG = {
 }
 
 
-SUPPORT_EXT = [".mp3",".flac",".ogg"]
+SUPPORT_EXT = [".mp3",".flac",".ogg", ".wma"]
 
 MPD_ITEM_PLAYLIST_QUEE="playlist_quee"
 MPD_ITEM_DISPLAY_NAME="display_name"
