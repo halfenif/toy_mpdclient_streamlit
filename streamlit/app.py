@@ -24,7 +24,7 @@ from const import MPD_COMMAND_LOOP, MPD_COMMAND_REPEAT, MPD_COMMAND_SINGLE, MPD_
 from const import MPD_COMMAND_QUEE_CLEAR, MPD_COMMAND_QUEE_DELETE, MPD_COMMAND_QUEE_ADD, MPD_COMMAND_QUEE_DOWN, MPD_COMMAND_QUEE_UP, MPD_COMMAND_QUEE_PLAY
 
 
-from const import EMOJI_PLAY, EMOJI_QUEE_DELETE, EMOJI_REFRESH, EMOJI_UP, EMOJI_DOWN
+from const import EMOJI_PLAY, EMOJI_STOP, EMOJI_QUEE_DELETE, EMOJI_REFRESH, EMOJI_UP, EMOJI_DOWN
 
 
 import streamlit as st
@@ -221,7 +221,7 @@ def fn_select_command_loop():
     fn_mpd_command(mpdItem)
 
 #----------------------------------------
-def fn_select_command_play():
+def fn_select_command_play_select():
     if not st.session_state[S_UI_SELECT_COMMAND_PLAY] == S_UI_COMMON_ITEM_SELECT_INIT:
         # Init MPD Item
         mpdItem = MpdItem()
@@ -231,6 +231,12 @@ def fn_select_command_play():
     else:
         st.error("Current S_UI_SELECT_COMMAND_PLAY is S_UI_COMMON_ITEM_SELECT_INIT")
     
+def fn_select_command_play_button(play_command: str):
+    # Init MPD Item
+    mpdItem = MpdItem()
+    mpdItem.command = play_command
+    fn_mpd_command(mpdItem)
+    st.rerun()
 
 
 # Quee Select Changed
@@ -342,15 +348,23 @@ with c_status:
         # play button
         if result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_STOP:
             play_command_options = [S_UI_COMMON_ITEM_SELECT_INIT, MPD_COMMAND_PLAY]
-        elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PAUSE:
-            play_command_options = [S_UI_COMMON_ITEM_SELECT_INIT, MPD_COMMAND_PLAY, MPD_COMMAND_RESUME]
-        elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PLAY:
-            play_command_options = [S_UI_COMMON_ITEM_SELECT_INIT, MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PREVIOUS, MPD_COMMAND_PAUSE, MPD_COMMAND_NEXT]
-        else:
-            play_command_options = [f"? not defined {result_mpd_status[MPD_ITEM_STATE]}"]
 
+            btn_clicked = st.button(f"{EMOJI_PLAY} Play")
+            if btn_clicked:
+                fn_select_command_play_button(MPD_COMMAND_PLAY)
+        else:
+            btn_clicked = st.button(f"{EMOJI_STOP} Stop")
+            if btn_clicked:
+                fn_select_command_play_button(MPD_COMMAND_STOP)
+
+            if result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PAUSE:
+                play_command_options = [S_UI_COMMON_ITEM_SELECT_INIT, MPD_COMMAND_PLAY, MPD_COMMAND_RESUME]
+            elif result_mpd_status[MPD_ITEM_STATE] == MPD_COMMAND_PLAY:
+                play_command_options = [S_UI_COMMON_ITEM_SELECT_INIT, MPD_COMMAND_PLAY, MPD_COMMAND_STOP, MPD_COMMAND_PREVIOUS, MPD_COMMAND_PAUSE, MPD_COMMAND_NEXT]
+            else:
+                play_command_options = [f"? not defined {result_mpd_status[MPD_ITEM_STATE]}"]
        
-        st.selectbox("Play Command", play_command_options, index=0, on_change=fn_select_command_play, key=S_UI_SELECT_COMMAND_PLAY)
+            st.selectbox("Other Play Command", play_command_options, index=0, on_change=fn_select_command_play_select, key=S_UI_SELECT_COMMAND_PLAY)
 
 
         # Loop Muliti Select
