@@ -7,8 +7,6 @@ services:
       - 9011:9011
     networks:
       - deploy_network
-    extra_hosts:
-      - "host.containers.internal:host-gateway"      
     volumes:
       - ${FOLDER_TARGET}:/app/target:z  # look .env
     container_name: mpdclient_fastapi
